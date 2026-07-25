@@ -26,29 +26,37 @@
     .color-picker-wrapper { display: flex; align-items: center; gap: 10px; }
     input[type="color"] { width: 40px; height: 40px; border: none; border-radius: 4px; cursor: pointer; }
 
-    /* --- botステータス表示用スタイル --- */
-    .bot-status-container {
+    /* カテゴリー内のサブセクション */
+    .sub-section {
       margin-bottom: 25px;
-      padding: 15px;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 6px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+    .sub-section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .sub-section h3 {
+      font-size: 1.1rem;
+      margin-bottom: 12px;
+      color: #2c3e50;
+    }
+
+    /* --- botの状態 表示用スタイル --- */
+    .bot-status-container {
       display: flex;
       align-items: center;
       gap: 12px;
     }
-    .bot-status-label {
-      font-weight: bold;
-      font-size: 1rem;
-    }
     .status-badge {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
+      gap: 8px;
+      padding: 8px 16px;
       border-radius: 20px;
       font-weight: bold;
-      font-size: 0.95rem;
+      font-size: 1rem;
       color: white;
       transition: all 0.3s ease;
     }
@@ -188,34 +196,41 @@
 
         <div id="section-version" class="hidden">
           
-          <div class="bot-status-container">
-            <span class="bot-status-label">botのステータス:</span>
-            <div id="bot-status-badge" class="status-badge online">
-              <span class="status-dot"></span>
-              <span id="bot-status-text">オンライン</span>
+          <div class="sub-section">
+            <h3>botの状態</h3>
+            <div class="bot-status-container">
+              <div id="bot-status-badge" class="status-badge online">
+                <span class="status-dot"></span>
+                <span id="bot-status-text">オンライン</span>
+              </div>
             </div>
           </div>
 
-          <div id="version-view">
-            <p>現在のボットバージョン: <strong id="version-display">1.00.00</strong></p>
-          </div>
-          <div id="version-edit" class="hidden">
-            <div class="form-group">
-              <label>ボットバージョン設定</label>
-              <div class="version-input-container">
-                <span class="version-prefix">N84ボット v</span>
-                <input type="text" id="v-major" class="version-part-first" maxlength="3" placeholder="1">
-                <span>.</span>
-                <input type="text" id="v-minor" class="version-part" maxlength="2" placeholder="00">
-                <span>.</span>
-                <input type="text" id="v-patch" class="version-part" maxlength="2" placeholder="00">
+          <div class="sub-section">
+            <h3>バージョン設定</h3>
+            
+            <div id="version-view">
+              <p>現在のボットバージョン: <strong id="version-display">1.00.00</strong></p>
+            </div>
+
+            <div id="version-edit" class="hidden">
+              <div class="form-group">
+                <div class="version-input-container">
+                  <span class="version-prefix">N84ボット v</span>
+                  <input type="text" id="v-major" class="version-part-first" maxlength="3" placeholder="1">
+                  <span>.</span>
+                  <input type="text" id="v-minor" class="version-part" maxlength="2" placeholder="00">
+                  <span>.</span>
+                  <input type="text" id="v-patch" class="version-part" maxlength="2" placeholder="00">
+                </div>
+              </div>
+              <div class="action-buttons">
+                <button id="save-version-btn" class="btn btn-success">保存してDiscordへ反映</button>
+                <button class="btn btn-secondary cancel-btn">キャンセル</button>
               </div>
             </div>
-            <div class="action-buttons">
-              <button id="save-version-btn" class="btn btn-success">保存してDiscordへ反映</button>
-              <button class="btn btn-secondary cancel-btn">キャンセル</button>
-            </div>
           </div>
+
         </div>
 
         <div id="section-terms">
@@ -265,12 +280,11 @@
   </div>
 
   <script>
-    // localStorage からデータを読み込み
     let currentVersion = localStorage.getItem('n84_version') || "1.00.00";
     let currentTitle = localStorage.getItem('n84_title') ?? "📜 利用規約 - 灘校84回生＋αグループ";
     let currentMarkdownContent = localStorage.getItem('n84_content') || "ここに **利用規約** のテキストが表示されます。\n||ネタバレ注意|| の内容や __下線__ も選択可能です。";
     let currentColor = localStorage.getItem('n84_color') || "#3498db";
-    let isBotOnline = true; // デフォルトはオンライン（※API連携時に自動切り替え可能）
+    let isBotOnline = true;
     let currentTab = "terms";
 
     function saveToLocalStorage() {
@@ -321,7 +335,6 @@
 
     const cancelBtns = document.querySelectorAll('.cancel-btn');
 
-    // botのステータス表示を更新する関数
     function updateBotStatus(online) {
       isBotOnline = online;
       if (isBotOnline) {
@@ -459,7 +472,7 @@
         menuTerms.classList.remove('active');
         sectionVersion.classList.remove('hidden');
         sectionTerms.classList.add('hidden');
-        pageTitle.innerText = "bot設定"; // タイトル表示を更新
+        pageTitle.innerText = "bot設定";
       } else {
         menuTerms.classList.add('active');
         menuVersion.classList.remove('active');
