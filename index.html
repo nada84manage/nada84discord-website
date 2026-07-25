@@ -25,8 +25,51 @@
     input[type="text"] { padding: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
     .color-picker-wrapper { display: flex; align-items: center; gap: 10px; }
     input[type="color"] { width: 40px; height: 40px; border: none; border-radius: 4px; cursor: pointer; }
-    
-    /* バージョン入力フォーム (横幅固定で崩れ防止) */
+
+    /* --- botステータス表示用スタイル --- */
+    .bot-status-container {
+      margin-bottom: 25px;
+      padding: 15px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .bot-status-label {
+      font-weight: bold;
+      font-size: 1rem;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 0.95rem;
+      color: white;
+      transition: all 0.3s ease;
+    }
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: white;
+    }
+    /* オンライン (はっきりした緑) */
+    .status-badge.online {
+      background-color: #2ecc71;
+      box-shadow: 0 0 8px rgba(46, 204, 113, 0.4);
+    }
+    /* オフライン (はっきりした赤) */
+    .status-badge.offline {
+      background-color: #e74c3c;
+      box-shadow: 0 0 8px rgba(231, 76, 60, 0.4);
+    }
+
+    /* バージョン入力フォーム (横幅固定) */
     .version-input-container {
       display: flex;
       align-items: center;
@@ -131,7 +174,7 @@
     <nav class="sidebar" id="sidebar">
       <h2>灘校84回生＋α</h2>
       <ul>
-        <li><a href="#" id="menu-version">バージョン</a></li>
+        <li><a href="#" id="menu-version">bot設定</a></li>
         <li><a href="#" class="active" id="menu-terms">利用規約</a></li>
       </ul>
     </nav>
@@ -144,6 +187,15 @@
         </div>
 
         <div id="section-version" class="hidden">
+          
+          <div class="bot-status-container">
+            <span class="bot-status-label">botのステータス:</span>
+            <div id="bot-status-badge" class="status-badge online">
+              <span class="status-dot"></span>
+              <span id="bot-status-text">オンライン</span>
+            </div>
+          </div>
+
           <div id="version-view">
             <p>現在のボットバージョン: <strong id="version-display">1.00.00</strong></p>
           </div>
@@ -213,14 +265,14 @@
   </div>
 
   <script>
-    // localStorage からデータを読み込み（無ければデフォルト値をセット）
+    // localStorage からデータを読み込み
     let currentVersion = localStorage.getItem('n84_version') || "1.00.00";
     let currentTitle = localStorage.getItem('n84_title') ?? "📜 利用規約 - 灘校84回生＋αグループ";
     let currentMarkdownContent = localStorage.getItem('n84_content') || "ここに **利用規約** のテキストが表示されます。\n||ネタバレ注意|| の内容や __下線__ も選択可能です。";
     let currentColor = localStorage.getItem('n84_color') || "#3498db";
+    let isBotOnline = true; // デフォルトはオンライン（※API連携時に自動切り替え可能）
     let currentTab = "terms";
 
-    // ブラウザにデータを保管する関数
     function saveToLocalStorage() {
       localStorage.setItem('n84_version', currentVersion);
       localStorage.setItem('n84_title', currentTitle);
@@ -245,6 +297,9 @@
     const vPatch = document.getElementById('v-patch');
     const saveVersionBtn = document.getElementById('save-version-btn');
 
+    const botStatusBadge = document.getElementById('bot-status-badge');
+    const botStatusText = document.getElementById('bot-status-text');
+
     const sectionTerms = document.getElementById('section-terms');
     const termsView = document.getElementById('terms-view');
     const termsEdit = document.getElementById('terms-edit');
@@ -265,6 +320,18 @@
     const btnSpoiler = document.getElementById('btn-spoiler');
 
     const cancelBtns = document.querySelectorAll('.cancel-btn');
+
+    // botのステータス表示を更新する関数
+    function updateBotStatus(online) {
+      isBotOnline = online;
+      if (isBotOnline) {
+        botStatusBadge.className = "status-badge online";
+        botStatusText.innerText = "オンライン";
+      } else {
+        botStatusBadge.className = "status-badge offline";
+        botStatusText.innerText = "オフライン";
+      }
+    }
 
     function formatDoc(cmd) {
       document.execCommand(cmd, false, null);
@@ -392,7 +459,7 @@
         menuTerms.classList.remove('active');
         sectionVersion.classList.remove('hidden');
         sectionTerms.classList.add('hidden');
-        pageTitle.innerText = "バージョン管理";
+        pageTitle.innerText = "bot設定"; // タイトル表示を更新
       } else {
         menuTerms.classList.add('active');
         menuVersion.classList.remove('active');
