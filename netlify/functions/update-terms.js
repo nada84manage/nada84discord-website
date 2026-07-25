@@ -1,7 +1,6 @@
 // netlify/functions/update-terms.js
 
 exports.handler = async (event, context) => {
-  // POSTリクエスト以外を拒否
   if (event.httpMethod !== "POST") {
     return {
       statusCode: 405,
@@ -9,7 +8,6 @@ exports.handler = async (event, context) => {
     };
   }
 
-  // Netlifyの環境変数からトークンを取得
   const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
   const CHANNEL_ID = "1514032284934733864";
   const MESSAGE_ID = "1529705454496911472";
@@ -22,16 +20,31 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { content } = JSON.parse(event.body);
+    const { action, title, content, color, version } = JSON.parse(event.body);
 
-    if (!content) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "更新内容が空です。" })
-      };
+    // カラーコードの処理 (#ffffff -> 10進数数値)
+    let colorDecimal = 3447003; // デフォルト色
+    if (color) {
+      colorDecimal = parseInt(color.replace("#", ""), 16);
     }
 
-    // Discord APIへPATCHリクエスト送信
+    // フッターテキストの生成
+    const footerText = version ? `N84ボット v${version}` : undefined;
+
+    // リクエストに応じたEmbedデータの作成
+    const embedPayload = {
+      embeds: [
+        {
+          title: title || "📜 利用規約",
+          description: content || "",
+          color: colorDecimal,
+          timestamp: new Date().toISOString(),
+          ...(footerText && { footer: { text: footerText } })
+        }
+      ]
+    };
+
+    // Discord APIへPATCH送信
     const discordRes = await fetch(
       `https://discord.com/api/v10/channels/${CHANNEL_ID}/messages/${MESSAGE_ID}`,
       {
@@ -40,16 +53,7 @@ exports.handler = async (event, context) => {
           "Authorization": `Bot ${BOT_TOKEN}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({
-          embeds: [
-            {
-              title: "📜 利用規約 - 灘校84回生＋αグループ",
-              description: content,
-              color: 3447003,
-              timestamp: new Date().toISOString()
-            }
-          ]
-        })
+        body: JSON.stringify(embedPayload)
       }
     );
 
