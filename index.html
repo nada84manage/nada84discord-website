@@ -26,15 +26,18 @@
     .color-picker-wrapper { display: flex; align-items: center; gap: 10px; }
     input[type="color"] { width: 40px; height: 40px; border: none; border-radius: 4px; cursor: pointer; }
     
-    .version-input-container { display: flex; align-items: center; font-size: 1.1rem; font-weight: bold; gap: 5px; }
-    .version-input-container input { width: 150px; text-align: center; }
+    /* 3分割バージョン入力フォーム */
+    .version-input-container { display: flex; align-items: center; font-size: 1.1rem; font-weight: bold; gap: 6px; }
+    .version-part { width: 50px; text-align: center; padding: 8px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
 
-    /* マークダウン/リッチテキスト装飾スタイル */
+    /* ツールバーとアクティブボタン */
     .toolbar { display: flex; gap: 5px; margin-bottom: 5px; background: #eef2f5; padding: 5px; border-radius: 4px 4px 0 0; border: 1px solid #ccc; border-bottom: none; }
-    .toolbar button { padding: 4px 10px; border: 1px solid #aaa; background: #fff; border-radius: 3px; cursor: pointer; font-weight: bold; }
+    .toolbar button { padding: 4px 10px; border: 1px solid #aaa; background: #fff; border-radius: 3px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
     .toolbar button:hover { background: #e2e8f0; }
+    /* スタイルがONの時に着色 */
+    .toolbar button.active { background-color: #3498db; color: white; border-color: #2980b9; }
 
-    /* エディタ (contenteditable) */
+    /* エディタ領域 */
     .editor-area {
       width: 100%;
       min-height: 200px;
@@ -48,9 +51,18 @@
       white-space: pre-wrap;
     }
 
-    /* ネタバレ防止タグのスタイル */
-    .spoiler {
-      background-color: #4f545c; /* 未解放時：灰色 */
+    /* 編集画面におけるネタバレタグ (すごく薄い背景 & 文字がうっすら見えつつ識別可能) */
+    .editor-area .spoiler {
+      background-color: #e2e8f0;
+      color: #4a5568;
+      border: 1px dashed #cbd5e0;
+      border-radius: 3px;
+      padding: 0 3px;
+    }
+
+    /* 閲覧画面におけるネタバレタグ */
+    .markdown-body .spoiler {
+      background-color: #4f545c;
       color: transparent;
       border-radius: 3px;
       padding: 0 2px;
@@ -58,9 +70,8 @@
       user-select: none;
       transition: background-color 0.2s, color 0.2s;
     }
-    /* クリック後（revealedクラス付与） */
-    .spoiler.revealed {
-      background-color: #b9bbbe; /* 解放時：明るい灰色 */
+    .markdown-body .spoiler.revealed {
+      background-color: #b9bbbe;
       color: #2e3136;
       cursor: text;
       user-select: text;
@@ -113,7 +124,11 @@
               <label>ボットバージョン設定</label>
               <div class="version-input-container">
                 <span>N84ボット v</span>
-                <input type="text" id="version-input" placeholder="1.00.00">
+                <input type="text" id="v-major" class="version-part" maxlength="3" placeholder="1">
+                <span>.</span>
+                <input type="text" id="v-minor" class="version-part" maxlength="3" placeholder="00">
+                <span>.</span>
+                <input type="text" id="v-patch" class="version-part" maxlength="3" placeholder="00">
               </div>
             </div>
             <div class="action-buttons">
@@ -149,11 +164,11 @@
             <div class="form-group">
               <label>規約本文（必須）</label>
               <div class="toolbar">
-                <button type="button" onclick="formatDoc('bold')" title="太字"><b>B</b></button>
-                <button type="button" onclick="formatDoc('italic')" title="斜体"><i>I</i></button>
-                <button type="button" onclick="formatDoc('underline')" title="下線"><u>U</u></button>
-                <button type="button" onclick="formatDoc('strikeThrough')" title="打ち消し線"><s>S</s></button>
-                <button type="button" onclick="applySpoiler()" title="ネタバレ防止">|| ネタバレ ||</button>
+                <button type="button" id="btn-bold" onclick="formatDoc('bold')" title="太字"><b>B</b></button>
+                <button type="button" id="btn-italic" onclick="formatDoc('italic')" title="斜体"><i>I</i></button>
+                <button type="button" id="btn-underline" onclick="formatDoc('underline')" title="下線"><u>U</u></button>
+                <button type="button" id="btn-strike" onclick="formatDoc('strikeThrough')" title="打ち消し線"><s>S</s></button>
+                <button type="button" id="btn-spoiler" onclick="applySpoiler()" title="ネタバレ防止">|| ネタバレ ||</button>
               </div>
               <div id="editor" class="editor-area" contenteditable="true"></div>
             </div>
@@ -188,7 +203,9 @@
     const versionView = document.getElementById('version-view');
     const versionEdit = document.getElementById('version-edit');
     const versionDisplay = document.getElementById('version-display');
-    const versionInput = document.getElementById('version-input');
+    const vMajor = document.getElementById('v-major');
+    const vMinor = document.getElementById('v-minor');
+    const vPatch = document.getElementById('v-patch');
     const saveVersionBtn = document.getElementById('save-version-btn');
 
     const sectionTerms = document.getElementById('section-terms');
@@ -204,15 +221,21 @@
     const editor = document.getElementById('editor');
     const saveTermsBtn = document.getElementById('save-terms-btn');
     
+    const btnBold = document.getElementById('btn-bold');
+    const btnItalic = document.getElementById('btn-italic');
+    const btnUnderline = document.getElementById('btn-underline');
+    const btnStrike = document.getElementById('btn-strike');
+    const btnSpoiler = document.getElementById('btn-spoiler');
+
     const cancelBtns = document.querySelectorAll('.cancel-btn');
 
-    // リッチテキスト操作 (太字、下線等)
+    // コマンド実行＆ボタン状態判定
     function formatDoc(cmd) {
       document.execCommand(cmd, false, null);
+      checkActiveStyles();
       editor.focus();
     }
 
-    // ネタバレタグの適用
     function applySpoiler() {
       const selection = window.getSelection();
       if (!selection.rangeCount || selection.isCollapsed) return;
@@ -222,10 +245,40 @@
       span.className = "spoiler";
       span.appendChild(range.extractContents());
       range.insertNode(span);
+      checkActiveStyles();
       editor.focus();
     }
 
-    // マークダウン -> HTML 変換 (プレビュー・初期表示用)
+    // カーソル位置や選択箇所の修飾状態を検知してボタンに色をつける
+    function checkActiveStyles() {
+      btnBold.classList.toggle('active', document.queryCommandState('bold'));
+      btnItalic.classList.toggle('active', document.queryCommandState('italic'));
+      btnUnderline.classList.toggle('active', document.queryCommandState('underline'));
+      btnStrike.classList.toggle('active', document.queryCommandState('strikeThrough'));
+
+      // ネタバレタグの検知
+      const selection = window.getSelection();
+      if (selection.rangeCount > 0) {
+        let node = selection.getRangeAt(0).startContainer;
+        if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
+        btnSpoiler.classList.toggle('active', node.classList && node.classList.contains('spoiler'));
+      }
+    }
+
+    // イベント検知（キー入力時・クリック時・カーソル移動時）
+    editor.addEventListener('keyup', checkActiveStyles);
+    editor.addEventListener('mouseup', checkActiveStyles);
+    editor.addEventListener('selectionchange', checkActiveStyles);
+
+    // バージョン入力フィールドの自動フォーカス移動処理
+    [vMajor, vMinor, vPatch].forEach((input, idx, arr) => {
+      input.addEventListener('input', () => {
+        if (input.value.length >= input.maxLength && idx < arr.length - 1) {
+          arr[idx + 1].focus();
+        }
+      });
+    });
+
     function markdownToHtml(text) {
       if (!text) return "";
       return text
@@ -238,7 +291,6 @@
         .replace(/\n/g, '<br>');
     }
 
-    // HTML (編集領域) -> マークダウン 変換 (Discord配信用)
     function htmlToMarkdown(node) {
       let md = "";
       for (let child of node.childNodes) {
@@ -270,7 +322,6 @@
       return md;
     }
 
-    // 画面初期表示
     function renderView() {
       if (currentTitle.trim()) {
         termsTitleDisplay.innerText = currentTitle;
@@ -310,12 +361,15 @@
     menuVersion.addEventListener('click', (e) => { e.preventDefault(); switchTab('version'); });
     menuTerms.addEventListener('click', (e) => { e.preventDefault(); switchTab('terms'); });
 
-    // 編集モード起動
     editBtn.addEventListener('click', () => {
       editBtn.classList.add('hidden');
 
       if (currentTab === 'version') {
-        versionInput.value = currentVersion;
+        const parts = currentVersion.split('.');
+        vMajor.value = parts[0] || '';
+        vMinor.value = parts[1] || '';
+        vPatch.value = parts[2] || '';
+
         versionView.classList.add('hidden');
         versionEdit.classList.remove('hidden');
       } else {
@@ -323,11 +377,11 @@
         termsColorInput.value = currentColor;
         colorCodeText.innerText = currentColor;
         
-        // 編集エリアにHTML（見た目の修飾）として設定
         editor.innerHTML = markdownToHtml(currentMarkdownContent);
         
         termsView.classList.add('hidden');
         termsEdit.classList.remove('hidden');
+        checkActiveStyles();
       }
     });
 
@@ -349,13 +403,11 @@
       });
     }
 
-    // 利用規約の保存処理
     saveTermsBtn.addEventListener('click', async () => {
       const newTitle = termsTitleInput.value.trim();
       const newColor = termsColorInput.value;
       const newMarkdownContent = htmlToMarkdown(editor).trim();
 
-      // 本文の必須バリデーション
       if (!newMarkdownContent) {
         alert("利用規約の本文は必須です。内容を入力してください。");
         return;
@@ -366,7 +418,7 @@
 
       try {
         const res = await sendUpdateToDiscord({
-          title: newTitle, // 空文字の場合はタイトル無しで送信される
+          title: newTitle,
           content: newMarkdownContent,
           color: newColor,
           version: currentVersion
@@ -378,7 +430,6 @@
           currentMarkdownContent = newMarkdownContent;
 
           renderView();
-          
           alert("利用規約を更新しました。");
           exitEditMode();
         } else {
@@ -393,14 +444,17 @@
       }
     });
 
-    // バージョンの保存処理
     saveVersionBtn.addEventListener('click', async () => {
-      const newVersion = versionInput.value.trim();
+      const maj = vMajor.value.trim();
+      const min = vMinor.value.trim();
+      const pat = vPatch.value.trim();
 
-      if (!newVersion) {
-        alert("バージョンを入力してください。");
+      if (maj === '' || min === '' || pat === '') {
+        alert("バージョンの枠をすべて入力してください。");
         return;
       }
+
+      const newVersion = `${maj}.${min}.${pat}`;
 
       saveVersionBtn.disabled = true;
       saveVersionBtn.innerText = "送信中...";
