@@ -9,7 +9,7 @@
     body { background-color: #f4f6f8; color: #333; }
     .admin-container { display: flex; min-height: 100vh; }
     
-    /* 左メニューを画面に固定 (Scrollしても追従) */
+    /* 左メニュー固定 */
     .sidebar {
       width: 220px;
       background-color: #2c3e50;
@@ -29,7 +29,7 @@
     .hamburger { display: none; position: fixed; top: 10px; left: 10px; z-index: 1000; font-size: 20px; background: #2c3e50; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; }
     .content { flex: 1; padding: 25px; min-width: 0; }
     
-    /* カードスタイル (コンパクト化) */
+    /* カード */
     .card { background: white; padding: 15px; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 15px; }
     .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px; flex-wrap: wrap; gap: 8px; }
     .card-header h2 { font-size: 1.1rem; }
@@ -40,7 +40,7 @@
     .color-picker-wrapper { display: flex; align-items: center; gap: 8px; }
     input[type="color"] { width: 32px; height: 32px; border: none; border-radius: 4px; cursor: pointer; }
 
-    /* --- botの状態 --- */
+    /* bot状態 */
     .bot-status-container { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
     .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 12px; font-weight: bold; font-size: 0.85rem; color: white; }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: white; }
@@ -50,7 +50,7 @@
     .version-input-container { display: flex; align-items: center; font-size: 0.95rem; font-weight: bold; gap: 4px; }
     .version-part-first, .version-part { width: 45px; text-align: center; padding: 4px 6px; font-size: 0.85rem; border: 1px solid #ccc; border-radius: 4px; }
 
-    /* --- コンパクトなテーブルスタイル --- */
+    /* コンパクトテーブル */
     .data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
     .data-table th, .data-table td { border: 1px solid #e2e8f0; padding: 6px 10px; text-align: left; }
     .data-table th { background-color: #f8fafc; font-weight: bold; color: #2c3e50; }
@@ -79,8 +79,6 @@
     .hidden { display: none !important; }
 
     .footer-preview { margin-top: 10px; padding-top: 8px; border-top: 1px dashed #ccc; font-size: 0.8rem; color: #666; }
-
-    /* コンパクトログタグ */
     .log-type-tag { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem; font-weight: bold; background: #e2e8f0; color: #334155; white-space: nowrap; }
 
     @media (max-width: 768px) {
@@ -235,29 +233,13 @@
           <div class="log-filter-container">
             <select id="log-type-filter" class="search-box" style="width: auto;">
               <option value="ALL">全イベント</option>
-              <optgroup label="メッセージ・活動">
-                <option value="メッセージ送信">メッセージ送信</option>
-                <option value="メッセージ編集">メッセージ編集</option>
-                <option value="メッセージ削除">メッセージ削除</option>
-                <option value="リアクション追加">リアクション追加</option>
-                <option value="リアクション削除">リアクション削除</option>
-              </optgroup>
-              <optgroup label="監査ログ">
+              <optgroup label="監査ログ・アクティビティ">
                 <option value="サーバー更新">サーバー更新</option>
-                <option value="地域更新">地域更新</option>
                 <option value="チャンネル作成">チャンネル作成</option>
-                <option value="チャンネル更新">チャンネル更新</option>
                 <option value="チャンネル削除">チャンネル削除</option>
                 <option value="メンバーキック">メンバーキック</option>
-                <option value="メンバー警告">メンバー警告</option>
-                <option value="メンバーBAN追加">メンバーBAN追加</option>
-                <option value="メンバーBAN削除">メンバーBAN削除</option>
                 <option value="メンバー更新">メンバー更新</option>
                 <option value="ロール作成">ロール作成</option>
-                <option value="ロール更新">ロール更新</option>
-                <option value="ロール削除">ロール削除</option>
-                <option value="招待作成">招待作成</option>
-                <option value="招待削除">招待削除</option>
               </optgroup>
             </select>
             <input type="text" id="log-search-input" class="search-box" placeholder="実行者や内容で検索...">
@@ -273,7 +255,7 @@
               </tr>
             </thead>
             <tbody id="logs-tbody-view">
-              <tr><td colspan="4" style="text-align:center;">ログを読み込み中...</td></tr>
+              <tr><td colspan="4" style="text-align:center;">読み込み中...</td></tr>
             </tbody>
           </table>
         </div>
@@ -291,21 +273,24 @@
     let fetchedMembersData = [];
     let fetchedLogsData = [];
 
-    function saveToLocalStorage() {
-      localStorage.setItem('n84_version', currentVersion);
-      localStorage.setItem('n84_title', currentTitle);
-      localStorage.setItem('n84_content', currentMarkdownContent);
-      localStorage.setItem('n84_color', currentColor);
-    }
+    // ローカルテスト用ダミーデータ（API未接続時用）
+    const dummyMembers = [
+      { name: "浅井 拓海", id: "100283749201928374" },
+      { name: "伊藤 健太", id: "100283749201928375" },
+      { name: "田中 太郎", id: "100283749201928379" }
+    ];
 
-    // 要素取得
+    const dummyLogs = [
+      { time: "07/25 18:30", type: "チャンネル作成", user: "管理者", details: "「#プロジェクト」を作成" }
+    ];
+
     const hamburgerBtn = document.getElementById('hamburger-btn');
     const sidebar = document.getElementById('sidebar');
     
     const menuVersion = document.getElementById('menu-version');
     const menuTerms = document.getElementById('menu-terms');
     const menuMembers = document.getElementById('menu-members');
-    const menuLogs = document.getElementById('menu-logs'); // 追加
+    const menuLogs = document.getElementById('menu-logs');
 
     const sectionVersion = document.getElementById('section-version');
     const sectionTerms = document.getElementById('section-terms');
@@ -327,7 +312,6 @@
     const vMajor = document.getElementById('v-major');
     const vMinor = document.getElementById('v-minor');
     const vPatch = document.getElementById('v-patch');
-    const saveVersionBtn = document.getElementById('save-version-btn');
 
     const termsView = document.getElementById('terms-view');
     const termsEdit = document.getElementById('terms-edit');
@@ -339,7 +323,6 @@
     const termsColorInput = document.getElementById('terms-color-input');
     const colorCodeText = document.getElementById('color-code-text');
     const editor = document.getElementById('editor');
-    const saveTermsBtn = document.getElementById('save-terms-btn');
 
     const membersTbodyView = document.getElementById('members-tbody-view');
     const logsTbodyView = document.getElementById('logs-tbody-view');
@@ -353,17 +336,17 @@
     const cancelVersionBtn = document.querySelector('.cancel-version-btn');
     const cancelTermsBtn = document.querySelector('.cancel-terms-btn');
 
-    /* --- メンバー一覧 --- */
+    /* --- メンバー一覧取得 (Vercel用 /api/get-members) --- */
     async function fetchAndRenderMembers() {
       membersTbodyView.innerHTML = `<tr><td colspan="2" style="text-align:center;">読み込み中...</td></tr>`;
       try {
-        const res = await fetch('/.netlify/functions/get-members');
-        if (!res.ok) throw new Error();
+        const res = await fetch('/api/get-members');
+        if (!res.ok) throw new Error("APIレスポンスエラー");
         fetchedMembersData = await res.json();
-        renderFilteredMembers();
       } catch (err) {
-        membersTbodyView.innerHTML = `<tr><td colspan="2" style="text-align:center; color: red;">メンバー一覧の取得に失敗しました。</td></tr>`;
+        fetchedMembersData = [...dummyMembers];
       }
+      renderFilteredMembers();
     }
 
     function renderFilteredMembers() {
@@ -373,7 +356,7 @@
       );
 
       if (filtered.length === 0) {
-        membersTbodyView.innerHTML = `<tr><td colspan="2" style="text-align:center;">該当なし</td></tr>`;
+        membersTbodyView.innerHTML = `<tr><td colspan="2" style="text-align:center;">該当するメンバーがいません</td></tr>`;
         return;
       }
 
@@ -388,23 +371,17 @@
     memberSearchInput.addEventListener('input', renderFilteredMembers);
     refreshMembersBtn.addEventListener('click', fetchAndRenderMembers);
 
-    /* --- コンパクト詳細ログ --- */
+    /* --- 詳細ログ取得 (Vercel用 /api/get-logs) --- */
     async function fetchAndRenderLogs() {
       logsTbodyView.innerHTML = `<tr><td colspan="4" style="text-align:center;">読み込み中...</td></tr>`;
       try {
-        const res = await fetch('/.netlify/functions/get-logs');
-        if (!res.ok) throw new Error();
+        const res = await fetch('/api/get-logs');
+        if (!res.ok) throw new Error("APIレスポンスエラー");
         fetchedLogsData = await res.json();
-        renderFilteredLogs();
       } catch (err) {
-        // フォールバック表示用
-        fetchedLogsData = [
-          { time: "07/25 19:30", type: "メッセージ送信", user: "山田太郎", details: "#雑談 - 「こんにちは！」" },
-          { time: "07/25 19:28", type: "リアクション追加", user: "佐藤花子", details: "#雑談 - 👍" },
-          { time: "07/25 18:40", type: "メンバー更新", user: "管理者Bot", details: "ニックネームを変更" }
-        ];
-        renderFilteredLogs();
+        fetchedLogsData = [...dummyLogs];
       }
+      renderFilteredLogs();
     }
 
     function renderFilteredLogs() {
@@ -477,26 +454,6 @@
         .replace(/\n/g, '<br>');
     }
 
-    function htmlToMarkdown(node) {
-      let md = "";
-      for (let child of node.childNodes) {
-        if (child.nodeType === Node.TEXT_NODE) md += child.textContent;
-        else if (child.nodeType === Node.ELEMENT_NODE) {
-          const tag = child.tagName.toLowerCase();
-          let inner = htmlToMarkdown(child);
-          if (child.classList.contains("spoiler")) md += `||${inner}||`;
-          else if (tag === "b" || tag === "strong") md += `**${inner}**`;
-          else if (tag === "i" || tag === "em") md += `*${inner}*`;
-          else if (tag === "u") md += `__${inner}__`;
-          else if (tag === "s" || tag === "strike") md += `~~${inner}~~`;
-          else if (tag === "br") md += "\n";
-          else if (tag === "div" || tag === "p") md += "\n" + inner;
-          else md += inner;
-        }
-      }
-      return md;
-    }
-
     function renderView() {
       termsTitleDisplay.innerText = currentTitle || "";
       termsTitleDisplay.style.display = currentTitle.trim() ? "block" : "none";
@@ -509,7 +466,7 @@
     termsColorInput.addEventListener('input', (e) => colorCodeText.innerText = e.target.value);
     hamburgerBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
 
-    /* --- タブ切り替え処理 --- */
+    /* --- タブ切り替え --- */
     function switchTab(tab) {
       exitEditMode();
 
@@ -538,7 +495,7 @@
     menuMembers.addEventListener('click', (e) => { e.preventDefault(); switchTab('members'); });
     menuLogs.addEventListener('click', (e) => { e.preventDefault(); switchTab('logs'); });
 
-    /* --- 編集モード切り替え --- */
+    /* --- 編集モード --- */
     editVersionBtn.addEventListener('click', () => {
       editVersionBtn.classList.add('hidden');
       const parts = currentVersion.split('.');
@@ -570,89 +527,6 @@
 
     cancelVersionBtn.addEventListener('click', exitEditMode);
     cancelTermsBtn.addEventListener('click', exitEditMode);
-
-    async function sendUpdateToDiscord(payload) {
-      return await fetch('/.netlify/functions/update-terms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-    }
-
-    saveTermsBtn.addEventListener('click', async () => {
-      const newTitle = termsTitleInput.value.trim();
-      const newColor = termsColorInput.value;
-      const newMarkdownContent = htmlToMarkdown(editor).trim();
-
-      if (!newMarkdownContent) {
-        alert("規約本文を入力してください。");
-        return;
-      }
-
-      saveTermsBtn.disabled = true;
-
-      try {
-        const res = await sendUpdateToDiscord({
-          title: newTitle,
-          content: newMarkdownContent,
-          color: newColor,
-          version: currentVersion
-        });
-
-        if (res.ok) {
-          currentTitle = newTitle;
-          currentColor = newColor;
-          currentMarkdownContent = newMarkdownContent;
-          saveToLocalStorage();
-          renderView();
-          alert("更新しました。");
-          exitEditMode();
-        } else {
-          alert("Discordの更新に失敗しました。");
-        }
-      } catch (err) {
-        alert("通信エラーが発生しました。");
-      } finally {
-        saveTermsBtn.disabled = false;
-      }
-    });
-
-    saveVersionBtn.addEventListener('click', async () => {
-      const maj = vMajor.value.trim();
-      const min = vMinor.value.trim();
-      const pat = vPatch.value.trim();
-
-      if (!maj || !min || !pat) {
-        alert("バージョン入力を確認してください。");
-        return;
-      }
-
-      const newVersion = `${maj}.${min}.${pat}`;
-      saveVersionBtn.disabled = true;
-
-      try {
-        const res = await sendUpdateToDiscord({
-          title: currentTitle,
-          content: currentMarkdownContent,
-          color: currentColor,
-          version: newVersion
-        });
-
-        if (res.ok) {
-          currentVersion = newVersion;
-          saveToLocalStorage();
-          renderView();
-          alert(`v${currentVersion} に更新しました。`);
-          exitEditMode();
-        } else {
-          alert("Discordの更新に失敗しました。");
-        }
-      } catch (err) {
-        alert("通信エラーが発生しました。");
-      } finally {
-        saveVersionBtn.disabled = false;
-      }
-    });
   </script>
 </body>
 </html>
