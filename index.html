@@ -22,28 +22,51 @@
     
     .form-group { margin-bottom: 15px; }
     .form-group label { display: block; font-weight: bold; margin-bottom: 5px; }
-    input[type="text"], textarea { width: 100%; padding: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
+    input[type="text"] { width: 100%; padding: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
     .color-picker-wrapper { display: flex; align-items: center; gap: 10px; }
     input[type="color"] { width: 40px; height: 40px; border: none; border-radius: 4px; cursor: pointer; }
     
     .version-input-container { display: flex; align-items: center; font-size: 1.1rem; font-weight: bold; gap: 5px; }
     .version-input-container input { width: 150px; text-align: center; }
 
-    /* マークダウンツールバー */
+    /* マークダウン/リッチテキスト装飾スタイル */
     .toolbar { display: flex; gap: 5px; margin-bottom: 5px; background: #eef2f5; padding: 5px; border-radius: 4px 4px 0 0; border: 1px solid #ccc; border-bottom: none; }
     .toolbar button { padding: 4px 10px; border: 1px solid #aaa; background: #fff; border-radius: 3px; cursor: pointer; font-weight: bold; }
     .toolbar button:hover { background: #e2e8f0; }
-    .markdown-textarea { border-radius: 0 0 4px 4px !important; }
 
-    /* Discord風マークダウンプレビュー装飾 */
+    /* エディタ (contenteditable) */
+    .editor-area {
+      width: 100%;
+      min-height: 200px;
+      padding: 10px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 0 0 4px 4px;
+      background: #fff;
+      overflow-y: auto;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    /* ネタバレ防止タグのスタイル */
+    .spoiler {
+      background-color: #4f545c; /* 未解放時：灰色 */
+      color: transparent;
+      border-radius: 3px;
+      padding: 0 2px;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.2s, color 0.2s;
+    }
+    /* クリック後（revealedクラス付与） */
+    .spoiler.revealed {
+      background-color: #b9bbbe; /* 解放時：明るい灰色 */
+      color: #2e3136;
+      cursor: text;
+      user-select: text;
+    }
+
     .markdown-body { line-height: 1.6; white-space: pre-wrap; }
-    .markdown-body strong { font-weight: bold; }
-    .markdown-body em { font-style: italic; }
-    .markdown-body u { text-decoration: underline; }
-    .markdown-body s { text-decoration: line-through; }
-    .markdown-body .spoiler { background-color: #2a2b2e; color: transparent; border-radius: 3px; padding: 0 2px; cursor: pointer; }
-    .markdown-body .spoiler:hover { color: #fff; }
-
     .action-buttons { margin-top: 15px; display: flex; gap: 10px; }
     .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
     .btn-primary { background-color: #3498db; color: white; }
@@ -111,8 +134,8 @@
 
           <div id="terms-edit" class="hidden">
             <div class="form-group">
-              <label for="terms-title-input">タイトル</label>
-              <input type="text" id="terms-title-input" value="📜 利用規約 - 灘校84回生＋αグループ">
+              <label for="terms-title-input">タイトル（任意）</label>
+              <input type="text" id="terms-title-input" placeholder="タイトルなしにする場合は空欄">
             </div>
 
             <div class="form-group">
@@ -124,15 +147,15 @@
             </div>
 
             <div class="form-group">
-              <label>規約本文</label>
+              <label>規約本文（必須）</label>
               <div class="toolbar">
-                <button type="button" onclick="insertMarkdown('**', '**')" title="太字"><b>B</b></button>
-                <button type="button" onclick="insertMarkdown('*', '*')" title="斜体"><i>I</i></button>
-                <button type="button" onclick="insertMarkdown('__', '__')" title="下線"><u>U</u></button>
-                <button type="button" onclick="insertMarkdown('~~', '~~')" title="打ち消し線"><s>S</s></button>
-                <button type="button" onclick="insertMarkdown('||', '||')" title="ネタバレ防止">|| ネタバレ ||</button>
+                <button type="button" onclick="formatDoc('bold')" title="太字"><b>B</b></button>
+                <button type="button" onclick="formatDoc('italic')" title="斜体"><i>I</i></button>
+                <button type="button" onclick="formatDoc('underline')" title="下線"><u>U</u></button>
+                <button type="button" onclick="formatDoc('strikeThrough')" title="打ち消し線"><s>S</s></button>
+                <button type="button" onclick="applySpoiler()" title="ネタバレ防止">|| ネタバレ ||</button>
               </div>
-              <textarea id="terms-content-input" class="markdown-textarea" rows="10" placeholder="利用規約を入力してください..."></textarea>
+              <div id="editor" class="editor-area" contenteditable="true"></div>
             </div>
 
             <div class="action-buttons">
@@ -149,7 +172,7 @@
   <script>
     let currentVersion = "1.00.00";
     let currentTitle = "📜 利用規約 - 灘校84回生＋αグループ";
-    let currentContent = "ここに **利用規約** のテキストが表示されます。\n||ネタバレ文字|| や __下線__ もサポートされています。";
+    let currentMarkdownContent = "ここに **利用規約** のテキストが表示されます。\n||ネタバレ注意|| の内容や __下線__ も選択可能です。";
     let currentColor = "#3498db";
     let currentTab = "terms";
 
@@ -178,37 +201,86 @@
     const termsTitleInput = document.getElementById('terms-title-input');
     const termsColorInput = document.getElementById('terms-color-input');
     const colorCodeText = document.getElementById('color-code-text');
-    const termsContentInput = document.getElementById('terms-content-input');
+    const editor = document.getElementById('editor');
     const saveTermsBtn = document.getElementById('save-terms-btn');
     
     const cancelBtns = document.querySelectorAll('.cancel-btn');
 
-    // マークダウン挿入処理（ボタン押下時）
-    function insertMarkdown(startTag, endTag) {
-      const textarea = termsContentInput;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const selectedText = textarea.value.substring(start, end);
-      const replacement = startTag + selectedText + endTag;
-
-      textarea.value = textarea.value.substring(0, start) + replacement + textarea.value.substring(end);
-      textarea.focus();
-      textarea.setSelectionRange(start + startTag.length, end + startTag.length);
+    // リッチテキスト操作 (太字、下線等)
+    function formatDoc(cmd) {
+      document.execCommand(cmd, false, null);
+      editor.focus();
     }
 
-    // 簡易マークダウン変換 (Discord互換)
-    function parseDiscordMarkdown(text) {
+    // ネタバレタグの適用
+    function applySpoiler() {
+      const selection = window.getSelection();
+      if (!selection.rangeCount || selection.isCollapsed) return;
+
+      const range = selection.getRangeAt(0);
+      const span = document.createElement("span");
+      span.className = "spoiler";
+      span.appendChild(range.extractContents());
+      range.insertNode(span);
+      editor.focus();
+    }
+
+    // マークダウン -> HTML 変換 (プレビュー・初期表示用)
+    function markdownToHtml(text) {
+      if (!text) return "";
       return text
-        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") // エスケープ
-        .replace(/\|\|(.*?)\|\|/g, '<span class="spoiler">$1</span>')       // ネタバレ
-        .replace(/__(.*?)__/g, '<u>$1</u>')                                 // 下線
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')                   // 太字
-        .replace(/~~(.*?)~~/g, '<s>$1</s>')                                 // 打ち消し
-        .replace(/\*(.*?)\*/g, '<em>$1</em>');                              // 斜体
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/\|\|(.*?)\|\|/g, '<span class="spoiler" onclick="this.classList.add(\'revealed\')">$1</span>')
+        .replace(/__(.*?)__/g, '<u>$1</u>')
+        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+        .replace(/~~(.*?)~~/g, '<s>$1</s>')
+        .replace(/\*(.*?)\*/g, '<i>$1</i>')
+        .replace(/\n/g, '<br>');
     }
 
-    // 初期状態の画面描画
-    termsTextDisplay.innerHTML = parseDiscordMarkdown(currentContent);
+    // HTML (編集領域) -> マークダウン 変換 (Discord配信用)
+    function htmlToMarkdown(node) {
+      let md = "";
+      for (let child of node.childNodes) {
+        if (child.nodeType === Node.TEXT_NODE) {
+          md += child.textContent;
+        } else if (child.nodeType === Node.ELEMENT_NODE) {
+          const tag = child.tagName.toLowerCase();
+          let inner = htmlToMarkdown(child);
+          
+          if (child.classList.contains("spoiler")) {
+            md += `||${inner}||`;
+          } else if (tag === "b" || tag === "strong") {
+            md += `**${inner}**`;
+          } else if (tag === "i" || tag === "em") {
+            md += `*${inner}*`;
+          } else if (tag === "u") {
+            md += `__${inner}__`;
+          } else if (tag === "s" || tag === "strike") {
+            md += `~~${inner}~~`;
+          } else if (tag === "br") {
+            md += "\n";
+          } else if (tag === "div" || tag === "p") {
+            md += "\n" + inner;
+          } else {
+            md += inner;
+          }
+        }
+      }
+      return md;
+    }
+
+    // 画面初期表示
+    function renderView() {
+      if (currentTitle.trim()) {
+        termsTitleDisplay.innerText = currentTitle;
+        termsTitleDisplay.style.display = "block";
+      } else {
+        termsTitleDisplay.style.display = "none";
+      }
+      termsTextDisplay.innerHTML = markdownToHtml(currentMarkdownContent);
+    }
+    renderView();
 
     termsColorInput.addEventListener('input', (e) => {
       colorCodeText.innerText = e.target.value;
@@ -238,6 +310,7 @@
     menuVersion.addEventListener('click', (e) => { e.preventDefault(); switchTab('version'); });
     menuTerms.addEventListener('click', (e) => { e.preventDefault(); switchTab('terms'); });
 
+    // 編集モード起動
     editBtn.addEventListener('click', () => {
       editBtn.classList.add('hidden');
 
@@ -249,7 +322,10 @@
         termsTitleInput.value = currentTitle;
         termsColorInput.value = currentColor;
         colorCodeText.innerText = currentColor;
-        termsContentInput.value = currentContent;
+        
+        // 編集エリアにHTML（見た目の修飾）として設定
+        editor.innerHTML = markdownToHtml(currentMarkdownContent);
+        
         termsView.classList.add('hidden');
         termsEdit.classList.remove('hidden');
       }
@@ -273,13 +349,15 @@
       });
     }
 
+    // 利用規約の保存処理
     saveTermsBtn.addEventListener('click', async () => {
       const newTitle = termsTitleInput.value.trim();
       const newColor = termsColorInput.value;
-      const newContent = termsContentInput.value.trim();
+      const newMarkdownContent = htmlToMarkdown(editor).trim();
 
-      if (!newTitle || !newContent) {
-        alert("タイトルと本文を入力してください。");
+      // 本文の必須バリデーション
+      if (!newMarkdownContent) {
+        alert("利用規約の本文は必須です。内容を入力してください。");
         return;
       }
 
@@ -288,8 +366,8 @@
 
       try {
         const res = await sendUpdateToDiscord({
-          title: newTitle,
-          content: newContent,
+          title: newTitle, // 空文字の場合はタイトル無しで送信される
+          content: newMarkdownContent,
           color: newColor,
           version: currentVersion
         });
@@ -297,10 +375,9 @@
         if (res.ok) {
           currentTitle = newTitle;
           currentColor = newColor;
-          currentContent = newContent;
+          currentMarkdownContent = newMarkdownContent;
 
-          termsTitleDisplay.innerText = currentTitle;
-          termsTextDisplay.innerHTML = parseDiscordMarkdown(currentContent);
+          renderView();
           
           alert("利用規約を更新しました。");
           exitEditMode();
@@ -316,6 +393,7 @@
       }
     });
 
+    // バージョンの保存処理
     saveVersionBtn.addEventListener('click', async () => {
       const newVersion = versionInput.value.trim();
 
@@ -330,7 +408,7 @@
       try {
         const res = await sendUpdateToDiscord({
           title: currentTitle,
-          content: currentContent,
+          content: currentMarkdownContent,
           color: currentColor,
           version: newVersion
         });
