@@ -22,31 +22,37 @@
     
     .form-group { margin-bottom: 20px; }
     .form-group label { display: block; font-weight: bold; margin-bottom: 8px; }
-    input[type="text"] { width: 100%; padding: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
+    input[type="text"] { padding: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
     .color-picker-wrapper { display: flex; align-items: center; gap: 10px; }
     input[type="color"] { width: 40px; height: 40px; border: none; border-radius: 4px; cursor: pointer; }
     
-    /* 3分割バージョン入力フォーム (折り返し防止修正) */
+    /* バージョン入力フォーム (横幅固定で崩れ防止) */
     .version-input-container {
       display: flex;
       align-items: center;
       font-size: 1.1rem;
       font-weight: bold;
-      gap: 8px;
-      flex-wrap: nowrap; /* 縦崩れ防止 */
+      gap: 6px;
+      flex-wrap: nowrap;
     }
     .version-prefix {
-      white-space: nowrap; /* テキストの縦潰れ防止 */
-      flex-shrink: 0;
+      white-space: nowrap;
     }
-    .version-part {
-      width: 70px;
+    .version-part-first {
+      width: 60px !important;
       text-align: center;
       padding: 8px;
       font-size: 1rem;
       border: 1px solid #ccc;
       border-radius: 4px;
-      flex-shrink: 0;
+    }
+    .version-part {
+      width: 50px !important;
+      text-align: center;
+      padding: 8px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
     }
 
     /* ツールバーとアクティブボタン */
@@ -73,7 +79,7 @@
       border-color: #3498db;
     }
 
-    /* 編集画面におけるネタバレタグ (すごく薄い背景) */
+    /* 編集画面におけるネタバレタグ */
     .editor-area .spoiler {
       background-color: #f0f4f8;
       color: #555;
@@ -146,11 +152,11 @@
               <label>ボットバージョン設定</label>
               <div class="version-input-container">
                 <span class="version-prefix">N84ボット v</span>
-                <input type="text" id="v-major" class="version-part" maxlength="3" placeholder="1">
+                <input type="text" id="v-major" class="version-part-first" maxlength="3" placeholder="1">
                 <span>.</span>
-                <input type="text" id="v-minor" class="version-part" maxlength="3" placeholder="00">
+                <input type="text" id="v-minor" class="version-part" maxlength="2" placeholder="00">
                 <span>.</span>
-                <input type="text" id="v-patch" class="version-part" maxlength="3" placeholder="00">
+                <input type="text" id="v-patch" class="version-part" maxlength="2" placeholder="00">
               </div>
             </div>
             <div class="action-buttons">
@@ -172,7 +178,7 @@
           <div id="terms-edit" class="hidden">
             <div class="form-group">
               <label for="terms-title-input">タイトル（任意）</label>
-              <input type="text" id="terms-title-input" placeholder="タイトルなしにする場合は空欄">
+              <input type="text" id="terms-title-input" style="width: 100%;" placeholder="タイトルなしにする場合は空欄">
             </div>
 
             <div class="form-group">
@@ -207,11 +213,20 @@
   </div>
 
   <script>
-    let currentVersion = "1.00.00";
-    let currentTitle = "📜 利用規約 - 灘校84回生＋αグループ";
-    let currentMarkdownContent = "ここに **利用規約** のテキストが表示されます。\n||ネタバレ注意|| の内容や __下線__ も選択可能です。";
-    let currentColor = "#3498db";
+    // localStorage からデータを読み込み（無ければデフォルト値をセット）
+    let currentVersion = localStorage.getItem('n84_version') || "1.00.00";
+    let currentTitle = localStorage.getItem('n84_title') ?? "📜 利用規約 - 灘校84回生＋αグループ";
+    let currentMarkdownContent = localStorage.getItem('n84_content') || "ここに **利用規約** のテキストが表示されます。\n||ネタバレ注意|| の内容や __下線__ も選択可能です。";
+    let currentColor = localStorage.getItem('n84_color') || "#3498db";
     let currentTab = "terms";
+
+    // ブラウザにデータを保管する関数
+    function saveToLocalStorage() {
+      localStorage.setItem('n84_version', currentVersion);
+      localStorage.setItem('n84_title', currentTitle);
+      localStorage.setItem('n84_content', currentMarkdownContent);
+      localStorage.setItem('n84_color', currentColor);
+    }
 
     const hamburgerBtn = document.getElementById('hamburger-btn');
     const sidebar = document.getElementById('sidebar');
@@ -251,7 +266,6 @@
 
     const cancelBtns = document.querySelectorAll('.cancel-btn');
 
-    // コマンド実行＆ボタン状態判定
     function formatDoc(cmd) {
       document.execCommand(cmd, false, null);
       checkActiveStyles();
@@ -277,7 +291,6 @@
     btnStrike.addEventListener('click', () => formatDoc('strikeThrough'));
     btnSpoiler.addEventListener('click', () => applySpoiler());
 
-    // カーソル位置や選択箇所の修飾状態を検知してボタンにアクティブ色を適用
     function checkActiveStyles() {
       btnBold.classList.toggle('active', document.queryCommandState('bold'));
       btnItalic.classList.toggle('active', document.queryCommandState('italic'));
@@ -300,7 +313,6 @@
       }
     });
 
-    // 入力フォーカス移動
     [vMajor, vMinor, vPatch].forEach((input, idx, arr) => {
       input.addEventListener('input', () => {
         if (input.value.length >= input.maxLength && idx < arr.length - 1) {
@@ -360,6 +372,8 @@
         termsTitleDisplay.style.display = "none";
       }
       termsTextDisplay.innerHTML = markdownToHtml(currentMarkdownContent);
+      versionDisplay.innerText = currentVersion;
+      footerPreviewDisplay.innerText = `N84ボット v${currentVersion}`;
     }
     renderView();
 
@@ -459,7 +473,9 @@
           currentColor = newColor;
           currentMarkdownContent = newMarkdownContent;
 
+          saveToLocalStorage();
           renderView();
+          
           alert("利用規約を更新しました。");
           exitEditMode();
         } else {
@@ -499,8 +515,9 @@
 
         if (res.ok) {
           currentVersion = newVersion;
-          versionDisplay.innerText = currentVersion;
-          footerPreviewDisplay.innerText = `N84ボット v${currentVersion}`;
+
+          saveToLocalStorage();
+          renderView();
           
           alert(`バージョンを v${currentVersion} に更新しました。`);
           exitEditMode();
