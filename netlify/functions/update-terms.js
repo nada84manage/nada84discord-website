@@ -22,28 +22,32 @@ exports.handler = async (event, context) => {
   try {
     const { title, content, color, version } = JSON.parse(event.body);
 
-    // 16進数カラーコード処理
+    if (!content || !content.trim()) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "本文は必須項目です。" })
+      };
+    }
+
+    // 16進数カラーコードの変換
     let colorDecimal = 3447003;
     if (color) {
       colorDecimal = parseInt(color.replace("#", ""), 16);
     }
 
-    // フッターテキストの設定 (N84ボット v〇〇)
     const footerText = version ? `N84ボット v${version}` : undefined;
 
-    // Embedデータの作成 (timestampを削除)
-    const embedPayload = {
-      embeds: [
-        {
-          title: title || "📜 利用規約",
-          description: content || "",
-          color: colorDecimal,
-          ...(footerText && { footer: { text: footerText } })
-        }
-      ]
+    // Embed構造の構築 (タイトルが空の場合はtitleフィールド自体を除外)
+    const embedObj = {
+      description: content,
+      color: colorDecimal,
+      ...(footerText && { footer: { text: footerText } })
     };
 
-    // Discord APIへPATCH送信
+    if (title && title.trim() !== "") {
+      embedObj.title = title.trim();
+    }
+
     const discordRes = await fetch(
       `https://discord.com/api/v10/channels/${CHANNEL_ID}/messages/${MESSAGE_ID}`,
       {
@@ -52,7 +56,7 @@ exports.handler = async (event, context) => {
           "Authorization": `Bot ${BOT_TOKEN}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(embedPayload)
+        body: JSON.stringify({ embeds: [embedObj] })
       }
     );
 
