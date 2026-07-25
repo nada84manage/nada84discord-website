@@ -126,14 +126,14 @@
           </div>
 
           <div id="version-view">
-            <p style="font-size:0.9rem;">現在のボットバージョン: <strong id="version-display">1.00.00</strong></p>
+            <p style="font-size:0.9rem;">現在のボットバージョン: <strong id="version-display">2.00.00</strong></p>
           </div>
 
           <div id="version-edit" class="hidden">
             <div class="form-group">
               <div class="version-input-container">
                 <span>N84ボット v</span>
-                <input type="text" id="v-major" class="version-part-first" maxlength="3" placeholder="1">
+                <input type="text" id="v-major" class="version-part-first" maxlength="3" placeholder="2">
                 <span>.</span>
                 <input type="text" id="v-minor" class="version-part" maxlength="2" placeholder="00">
                 <span>.</span>
@@ -159,7 +159,7 @@
             <h3 id="terms-title-display" style="margin-bottom: 8px; font-size:1rem;">📜 利用規約 - 灘校84回生＋αグループ</h3>
             <div id="terms-text-display" class="markdown-body">ここに利用規約のテキストが表示されます。</div>
             <div class="footer-preview">
-              フッター: <span id="footer-preview-display">N84ボット v1.00.00</span>
+              フッター: <span id="footer-preview-display">N84ボット v2.00.00</span>
             </div>
           </div>
 
@@ -265,24 +265,16 @@
   </div>
 
   <script>
-    let currentVersion = localStorage.getItem('n84_version') || "1.00.00";
+    // RenderのAPI URLを直接設定
+    const RENDER_API_URL = "https://nada84discord.onrender.com";
+
+    let currentVersion = localStorage.getItem('n84_version') || "2.00.00";
     let currentTitle = localStorage.getItem('n84_title') ?? "📜 利用規約 - 灘校84回生＋αグループ";
     let currentMarkdownContent = localStorage.getItem('n84_content') || "ここに **利用規約** のテキストが表示されます。";
     let currentColor = localStorage.getItem('n84_color') || "#3498db";
 
     let fetchedMembersData = [];
     let fetchedLogsData = [];
-
-    // ローカルテスト用ダミーデータ（API未接続時用）
-    const dummyMembers = [
-      { name: "浅井 拓海", id: "100283749201928374" },
-      { name: "伊藤 健太", id: "100283749201928375" },
-      { name: "田中 太郎", id: "100283749201928379" }
-    ];
-
-    const dummyLogs = [
-      { time: "07/25 18:30", type: "チャンネル作成", user: "管理者", details: "「#プロジェクト」を作成" }
-    ];
 
     const hamburgerBtn = document.getElementById('hamburger-btn');
     const sidebar = document.getElementById('sidebar');
@@ -336,15 +328,17 @@
     const cancelVersionBtn = document.querySelector('.cancel-version-btn');
     const cancelTermsBtn = document.querySelector('.cancel-terms-btn');
 
-    /* --- メンバー一覧取得 (Vercel用 /api/get-members) --- */
+    /* --- メンバー一覧取得 (Render API用) --- */
     async function fetchAndRenderMembers() {
       membersTbodyView.innerHTML = `<tr><td colspan="2" style="text-align:center;">読み込み中...</td></tr>`;
       try {
-        const res = await fetch('/api/get-members');
+        const res = await fetch(`${RENDER_API_URL}/api/get-members`);
         if (!res.ok) throw new Error("APIレスポンスエラー");
         fetchedMembersData = await res.json();
       } catch (err) {
-        fetchedMembersData = [...dummyMembers];
+        console.error(err);
+        membersTbodyView.innerHTML = `<tr><td colspan="2" style="text-align:center; color:red;">メンバー一覧の取得に失敗しました</td></tr>`;
+        return;
       }
       renderFilteredMembers();
     }
@@ -371,15 +365,17 @@
     memberSearchInput.addEventListener('input', renderFilteredMembers);
     refreshMembersBtn.addEventListener('click', fetchAndRenderMembers);
 
-    /* --- 詳細ログ取得 (Vercel用 /api/get-logs) --- */
+    /* --- 詳細ログ取得 (Render API用) --- */
     async function fetchAndRenderLogs() {
       logsTbodyView.innerHTML = `<tr><td colspan="4" style="text-align:center;">読み込み中...</td></tr>`;
       try {
-        const res = await fetch('/api/get-logs');
+        const res = await fetch(`${RENDER_API_URL}/api/get-logs`);
         if (!res.ok) throw new Error("APIレスポンスエラー");
         fetchedLogsData = await res.json();
       } catch (err) {
-        fetchedLogsData = [...dummyLogs];
+        console.error(err);
+        logsTbodyView.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">ログの取得に失敗しました</td></tr>`;
+        return;
       }
       renderFilteredLogs();
     }
