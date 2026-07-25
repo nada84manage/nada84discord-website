@@ -20,28 +20,46 @@
     .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
     
-    .form-group { margin-bottom: 15px; }
-    .form-group label { display: block; font-weight: bold; margin-bottom: 5px; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-weight: bold; margin-bottom: 8px; }
     input[type="text"] { width: 100%; padding: 10px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
     .color-picker-wrapper { display: flex; align-items: center; gap: 10px; }
     input[type="color"] { width: 40px; height: 40px; border: none; border-radius: 4px; cursor: pointer; }
     
-    /* 3分割バージョン入力フォーム */
-    .version-input-container { display: flex; align-items: center; font-size: 1.1rem; font-weight: bold; gap: 6px; }
-    .version-part { width: 50px; text-align: center; padding: 8px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
+    /* 3分割バージョン入力フォーム (折り返し防止修正) */
+    .version-input-container {
+      display: flex;
+      align-items: center;
+      font-size: 1.1rem;
+      font-weight: bold;
+      gap: 8px;
+      flex-wrap: nowrap; /* 縦崩れ防止 */
+    }
+    .version-prefix {
+      white-space: nowrap; /* テキストの縦潰れ防止 */
+      flex-shrink: 0;
+    }
+    .version-part {
+      width: 70px;
+      text-align: center;
+      padding: 8px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
 
     /* ツールバーとアクティブボタン */
-    .toolbar { display: flex; gap: 5px; margin-bottom: 5px; background: #eef2f5; padding: 5px; border-radius: 4px 4px 0 0; border: 1px solid #ccc; border-bottom: none; }
-    .toolbar button { padding: 4px 10px; border: 1px solid #aaa; background: #fff; border-radius: 3px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
+    .toolbar { display: flex; gap: 5px; margin-bottom: 5px; background: #eef2f5; padding: 6px; border-radius: 4px 4px 0 0; border: 1px solid #ccc; border-bottom: none; }
+    .toolbar button { padding: 6px 12px; border: 1px solid #aaa; background: #fff; border-radius: 3px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
     .toolbar button:hover { background: #e2e8f0; }
-    /* スタイルがONの時に着色 */
     .toolbar button.active { background-color: #3498db; color: white; border-color: #2980b9; }
 
     /* エディタ領域 */
     .editor-area {
       width: 100%;
       min-height: 200px;
-      padding: 10px;
+      padding: 12px;
       font-size: 1rem;
       border: 1px solid #ccc;
       border-radius: 0 0 4px 4px;
@@ -49,15 +67,19 @@
       overflow-y: auto;
       line-height: 1.6;
       white-space: pre-wrap;
+      outline: none;
+    }
+    .editor-area:focus {
+      border-color: #3498db;
     }
 
-    /* 編集画面におけるネタバレタグ (すごく薄い背景 & 文字がうっすら見えつつ識別可能) */
+    /* 編集画面におけるネタバレタグ (すごく薄い背景) */
     .editor-area .spoiler {
-      background-color: #e2e8f0;
-      color: #4a5568;
+      background-color: #f0f4f8;
+      color: #555;
       border: 1px dashed #cbd5e0;
       border-radius: 3px;
-      padding: 0 3px;
+      padding: 0 4px;
     }
 
     /* 閲覧画面におけるネタバレタグ */
@@ -65,7 +87,7 @@
       background-color: #4f545c;
       color: transparent;
       border-radius: 3px;
-      padding: 0 2px;
+      padding: 0 4px;
       cursor: pointer;
       user-select: none;
       transition: background-color 0.2s, color 0.2s;
@@ -79,7 +101,7 @@
 
     .markdown-body { line-height: 1.6; white-space: pre-wrap; }
     .action-buttons { margin-top: 15px; display: flex; gap: 10px; }
-    .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    .btn { padding: 10px 18px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.95rem; }
     .btn-primary { background-color: #3498db; color: white; }
     .btn-success { background-color: #2ecc71; color: white; }
     .btn-secondary { background-color: #95a5a6; color: white; }
@@ -123,7 +145,7 @@
             <div class="form-group">
               <label>ボットバージョン設定</label>
               <div class="version-input-container">
-                <span>N84ボット v</span>
+                <span class="version-prefix">N84ボット v</span>
                 <input type="text" id="v-major" class="version-part" maxlength="3" placeholder="1">
                 <span>.</span>
                 <input type="text" id="v-minor" class="version-part" maxlength="3" placeholder="00">
@@ -164,11 +186,11 @@
             <div class="form-group">
               <label>規約本文（必須）</label>
               <div class="toolbar">
-                <button type="button" id="btn-bold" onclick="formatDoc('bold')" title="太字"><b>B</b></button>
-                <button type="button" id="btn-italic" onclick="formatDoc('italic')" title="斜体"><i>I</i></button>
-                <button type="button" id="btn-underline" onclick="formatDoc('underline')" title="下線"><u>U</u></button>
-                <button type="button" id="btn-strike" onclick="formatDoc('strikeThrough')" title="打ち消し線"><s>S</s></button>
-                <button type="button" id="btn-spoiler" onclick="applySpoiler()" title="ネタバレ防止">|| ネタバレ ||</button>
+                <button type="button" id="btn-bold" title="太字"><b>B</b></button>
+                <button type="button" id="btn-italic" title="斜体"><i>I</i></button>
+                <button type="button" id="btn-underline" title="下線"><u>U</u></button>
+                <button type="button" id="btn-strike" title="打ち消し線"><s>S</s></button>
+                <button type="button" id="btn-spoiler" title="ネタバレ防止">|| ネタバレ ||</button>
               </div>
               <div id="editor" class="editor-area" contenteditable="true"></div>
             </div>
@@ -249,28 +271,36 @@
       editor.focus();
     }
 
-    // カーソル位置や選択箇所の修飾状態を検知してボタンに色をつける
+    btnBold.addEventListener('click', () => formatDoc('bold'));
+    btnItalic.addEventListener('click', () => formatDoc('italic'));
+    btnUnderline.addEventListener('click', () => formatDoc('underline'));
+    btnStrike.addEventListener('click', () => formatDoc('strikeThrough'));
+    btnSpoiler.addEventListener('click', () => applySpoiler());
+
+    // カーソル位置や選択箇所の修飾状態を検知してボタンにアクティブ色を適用
     function checkActiveStyles() {
       btnBold.classList.toggle('active', document.queryCommandState('bold'));
       btnItalic.classList.toggle('active', document.queryCommandState('italic'));
       btnUnderline.classList.toggle('active', document.queryCommandState('underline'));
       btnStrike.classList.toggle('active', document.queryCommandState('strikeThrough'));
 
-      // ネタバレタグの検知
       const selection = window.getSelection();
       if (selection.rangeCount > 0) {
         let node = selection.getRangeAt(0).startContainer;
         if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
-        btnSpoiler.classList.toggle('active', node.classList && node.classList.contains('spoiler'));
+        btnSpoiler.classList.toggle('active', !!(node.classList && node.classList.contains('spoiler')));
       }
     }
 
-    // イベント検知（キー入力時・クリック時・カーソル移動時）
     editor.addEventListener('keyup', checkActiveStyles);
     editor.addEventListener('mouseup', checkActiveStyles);
-    editor.addEventListener('selectionchange', checkActiveStyles);
+    document.addEventListener('selectionchange', () => {
+      if (document.activeElement === editor) {
+        checkActiveStyles();
+      }
+    });
 
-    // バージョン入力フィールドの自動フォーカス移動処理
+    // 入力フォーカス移動
     [vMajor, vMinor, vPatch].forEach((input, idx, arr) => {
       input.addEventListener('input', () => {
         if (input.value.length >= input.maxLength && idx < arr.length - 1) {
