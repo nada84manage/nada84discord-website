@@ -17,7 +17,9 @@
     
     .hamburger { display: none; position: fixed; top: 15px; left: 15px; z-index: 1000; font-size: 24px; background: #2c3e50; color: white; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; }
     .content { flex: 1; padding: 40px; }
-    .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    
+    /* 基本カードスタイル */
+    .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
     .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
     
     .form-group { margin-bottom: 20px; }
@@ -26,28 +28,12 @@
     .color-picker-wrapper { display: flex; align-items: center; gap: 10px; }
     input[type="color"] { width: 40px; height: 40px; border: none; border-radius: 4px; cursor: pointer; }
 
-    /* カテゴリー内のサブセクション */
-    .sub-section {
-      margin-bottom: 25px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid #eee;
-    }
-    .sub-section:last-child {
-      border-bottom: none;
-      margin-bottom: 0;
-      padding-bottom: 0;
-    }
-    .sub-section h3 {
-      font-size: 1.1rem;
-      margin-bottom: 12px;
-      color: #2c3e50;
-    }
-
     /* --- botの状態 表示用スタイル --- */
     .bot-status-container {
       display: flex;
       align-items: center;
       gap: 12px;
+      padding: 10px 0;
     }
     .status-badge {
       display: inline-flex;
@@ -188,52 +174,58 @@
     </nav>
 
     <main class="content">
-      <div class="card">
-        <div class="card-header">
-          <h2 id="page-title">利用規約</h2>
-          <button id="edit-btn" class="btn btn-primary">編集</button>
-        </div>
 
-        <div id="section-version" class="hidden">
-          
-          <div class="sub-section">
-            <h3>botの状態</h3>
-            <div class="bot-status-container">
-              <div id="bot-status-badge" class="status-badge online">
-                <span class="status-dot"></span>
-                <span id="bot-status-text">オンライン</span>
-              </div>
+      <div id="section-version" class="hidden">
+        
+        <div class="card">
+          <div class="card-header">
+            <h2>botの状態</h2>
+          </div>
+          <div class="bot-status-container">
+            <div id="bot-status-badge" class="status-badge online">
+              <span class="status-dot"></span>
+              <span id="bot-status-text">オンライン</span>
             </div>
           </div>
-
-          <div class="sub-section">
-            <h3>バージョン設定</h3>
-            
-            <div id="version-view">
-              <p>現在のボットバージョン: <strong id="version-display">1.00.00</strong></p>
-            </div>
-
-            <div id="version-edit" class="hidden">
-              <div class="form-group">
-                <div class="version-input-container">
-                  <span class="version-prefix">N84ボット v</span>
-                  <input type="text" id="v-major" class="version-part-first" maxlength="3" placeholder="1">
-                  <span>.</span>
-                  <input type="text" id="v-minor" class="version-part" maxlength="2" placeholder="00">
-                  <span>.</span>
-                  <input type="text" id="v-patch" class="version-part" maxlength="2" placeholder="00">
-                </div>
-              </div>
-              <div class="action-buttons">
-                <button id="save-version-btn" class="btn btn-success">保存してDiscordへ反映</button>
-                <button class="btn btn-secondary cancel-btn">キャンセル</button>
-              </div>
-            </div>
-          </div>
-
         </div>
 
-        <div id="section-terms">
+        <div class="card">
+          <div class="card-header">
+            <h2>バージョン設定</h2>
+            <button id="edit-version-btn" class="btn btn-primary">編集</button>
+          </div>
+
+          <div id="version-view">
+            <p>現在のボットバージョン: <strong id="version-display">1.00.00</strong></p>
+          </div>
+
+          <div id="version-edit" class="hidden">
+            <div class="form-group">
+              <div class="version-input-container">
+                <span class="version-prefix">N84ボット v</span>
+                <input type="text" id="v-major" class="version-part-first" maxlength="3" placeholder="1">
+                <span>.</span>
+                <input type="text" id="v-minor" class="version-part" maxlength="2" placeholder="00">
+                <span>.</span>
+                <input type="text" id="v-patch" class="version-part" maxlength="2" placeholder="00">
+              </div>
+            </div>
+            <div class="action-buttons">
+              <button id="save-version-btn" class="btn btn-success">保存してDiscordへ反映</button>
+              <button class="btn btn-secondary cancel-version-btn">キャンセル</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div id="section-terms">
+        <div class="card">
+          <div class="card-header">
+            <h2 id="page-title">利用規約</h2>
+            <button id="edit-terms-btn" class="btn btn-primary">編集</button>
+          </div>
+
           <div id="terms-view">
             <h3 id="terms-title-display" style="margin-bottom: 10px;">📜 利用規約 - 灘校84回生＋αグループ</h3>
             <div id="terms-text-display" class="markdown-body">ここに利用規約のテキストが表示されます。</div>
@@ -270,12 +262,12 @@
 
             <div class="action-buttons">
               <button id="save-terms-btn" class="btn btn-success">保存してDiscordへ送信</button>
-              <button class="btn btn-secondary cancel-btn">キャンセル</button>
+              <button class="btn btn-secondary cancel-terms-btn">キャンセル</button>
             </div>
           </div>
         </div>
-
       </div>
+
     </main>
   </div>
 
@@ -299,8 +291,8 @@
     const menuVersion = document.getElementById('menu-version');
     const menuTerms = document.getElementById('menu-terms');
     
-    const pageTitle = document.getElementById('page-title');
-    const editBtn = document.getElementById('edit-btn');
+    const editVersionBtn = document.getElementById('edit-version-btn');
+    const editTermsBtn = document.getElementById('edit-terms-btn');
     
     const sectionVersion = document.getElementById('section-version');
     const versionView = document.getElementById('version-view');
@@ -333,7 +325,8 @@
     const btnStrike = document.getElementById('btn-strike');
     const btnSpoiler = document.getElementById('btn-spoiler');
 
-    const cancelBtns = document.querySelectorAll('.cancel-btn');
+    const cancelVersionBtn = document.querySelector('.cancel-version-btn');
+    const cancelTermsBtn = document.querySelector('.cancel-terms-btn');
 
     function updateBotStatus(online) {
       isBotOnline = online;
@@ -472,52 +465,52 @@
         menuTerms.classList.remove('active');
         sectionVersion.classList.remove('hidden');
         sectionTerms.classList.add('hidden');
-        pageTitle.innerText = "bot設定";
       } else {
         menuTerms.classList.add('active');
         menuVersion.classList.remove('active');
         sectionTerms.classList.remove('hidden');
         sectionVersion.classList.add('hidden');
-        pageTitle.innerText = "利用規約";
       }
     }
 
     menuVersion.addEventListener('click', (e) => { e.preventDefault(); switchTab('version'); });
     menuTerms.addEventListener('click', (e) => { e.preventDefault(); switchTab('terms'); });
 
-    editBtn.addEventListener('click', () => {
-      editBtn.classList.add('hidden');
+    editVersionBtn.addEventListener('click', () => {
+      editVersionBtn.classList.add('hidden');
+      const parts = currentVersion.split('.');
+      vMajor.value = parts[0] || '';
+      vMinor.value = parts[1] || '';
+      vPatch.value = parts[2] || '';
 
-      if (currentTab === 'version') {
-        const parts = currentVersion.split('.');
-        vMajor.value = parts[0] || '';
-        vMinor.value = parts[1] || '';
-        vPatch.value = parts[2] || '';
+      versionView.classList.add('hidden');
+      versionEdit.classList.remove('hidden');
+    });
 
-        versionView.classList.add('hidden');
-        versionEdit.classList.remove('hidden');
-      } else {
-        termsTitleInput.value = currentTitle;
-        termsColorInput.value = currentColor;
-        colorCodeText.innerText = currentColor;
-        
-        editor.innerHTML = markdownToHtml(currentMarkdownContent);
-        
-        termsView.classList.add('hidden');
-        termsEdit.classList.remove('hidden');
-        checkActiveStyles();
-      }
+    editTermsBtn.addEventListener('click', () => {
+      editTermsBtn.classList.add('hidden');
+      termsTitleInput.value = currentTitle;
+      termsColorInput.value = currentColor;
+      colorCodeText.innerText = currentColor;
+      
+      editor.innerHTML = markdownToHtml(currentMarkdownContent);
+      
+      termsView.classList.add('hidden');
+      termsEdit.classList.remove('hidden');
+      checkActiveStyles();
     });
 
     function exitEditMode() {
-      editBtn.classList.remove('hidden');
+      editVersionBtn.classList.remove('hidden');
+      editTermsBtn.classList.remove('hidden');
       versionView.classList.remove('hidden');
       versionEdit.classList.add('hidden');
       termsView.classList.remove('hidden');
       termsEdit.classList.add('hidden');
     }
 
-    cancelBtns.forEach(btn => btn.addEventListener('click', exitEditMode));
+    cancelVersionBtn.addEventListener('click', exitEditMode);
+    cancelTermsBtn.addEventListener('click', exitEditMode);
 
     async function sendUpdateToDiscord(payload) {
       return await fetch('/.netlify/functions/update-terms', {
