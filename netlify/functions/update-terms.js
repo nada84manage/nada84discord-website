@@ -20,25 +20,24 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { action, title, content, color, version } = JSON.parse(event.body);
+    const { title, content, color, version } = JSON.parse(event.body);
 
-    // カラーコードの処理 (#ffffff -> 10進数数値)
-    let colorDecimal = 3447003; // デフォルト色
+    // 16進数カラーコード処理
+    let colorDecimal = 3447003;
     if (color) {
       colorDecimal = parseInt(color.replace("#", ""), 16);
     }
 
-    // フッターテキストの生成
+    // フッターテキストの設定 (N84ボット v〇〇)
     const footerText = version ? `N84ボット v${version}` : undefined;
 
-    // リクエストに応じたEmbedデータの作成
+    // Embedデータの作成 (timestampを削除)
     const embedPayload = {
       embeds: [
         {
           title: title || "📜 利用規約",
           description: content || "",
           color: colorDecimal,
-          timestamp: new Date().toISOString(),
           ...(footerText && { footer: { text: footerText } })
         }
       ]
