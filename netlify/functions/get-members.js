@@ -1,5 +1,4 @@
 // netlify/functions/get-members.js
-const fetch = require('node-fetch'); // または標準の fetch (Node 18+)
 
 exports.handler = async function(event, context) {
   const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN; // 環境変数にセットしたBotトークン
@@ -13,7 +12,7 @@ exports.handler = async function(event, context) {
   }
 
   try {
-    // Discord APIからサーバーメンバー一覧を取得 (最大1000件)
+    // Node.js標準の fetch を使用してDiscord APIからメンバーを取得
     const response = await fetch(`https://discord.com/api/v10/guilds/${GUILD_ID}/members?limit=1000`, {
       headers: {
         Authorization: `Bot ${BOT_TOKEN}`
@@ -26,9 +25,8 @@ exports.handler = async function(event, context) {
 
     const members = await response.json();
 
-    // 必要なデータ（表示名またはユーザー名 と ID）を抽出
+    // 必要なデータ（表示名 と ID）を抽出
     let memberList = members.map(m => {
-      // サーバーでのニックネーム > グローバル表示名 > ユーザー名 の順で取得
       const name = m.nick || (m.user && m.user.global_name) || (m.user && m.user.username) || '不明';
       return {
         id: m.user.id,
@@ -36,7 +34,7 @@ exports.handler = async function(event, context) {
       };
     });
 
-    // 50音順・あいうえお順に並べ替え
+    // 50音順にソート
     memberList.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
 
     return {
