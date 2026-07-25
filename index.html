@@ -107,23 +107,6 @@
     .member-table tr:nth-child(even) {
       background-color: #fdfdfd;
     }
-    .member-table input[type="text"] {
-      width: 100%;
-      padding: 6px 10px;
-    }
-    .add-member-form {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      align-items: center;
-      background: #f8fafc;
-      padding: 15px;
-      border-radius: 6px;
-      border: 1px solid #e2e8f0;
-    }
-    .add-member-form input {
-      flex: 1;
-    }
 
     /* ボタン・ツールバー */
     .toolbar { display: flex; gap: 5px; margin-bottom: 5px; background: #eef2f5; padding: 6px; border-radius: 4px 4px 0 0; border: 1px solid #ccc; border-bottom: none; }
@@ -166,7 +149,6 @@
     .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.95rem; }
     .btn-primary { background-color: #3498db; color: white; }
     .btn-success { background-color: #2ecc71; color: white; }
-    .btn-danger { background-color: #e74c3c; color: white; }
     .btn-secondary { background-color: #95a5a6; color: white; }
     .btn-sm { padding: 5px 10px; font-size: 0.85rem; }
     .hidden { display: none; }
@@ -178,7 +160,6 @@
       .sidebar { position: fixed; top: 0; left: 0; height: 100%; z-index: 999; transform: translateX(-100%); }
       .sidebar.open { transform: translateX(0); }
       .content { padding: 60px 20px 20px 20px; }
-      .add-member-form { flex-direction: column; align-items: stretch; }
     }
   </style>
 </head>
@@ -292,8 +273,8 @@
       <div id="section-members" class="hidden">
         <div class="card">
           <div class="card-header">
-            <h2>メンバー対応表</h2>
-            <button id="edit-members-btn" class="btn btn-primary">編集</button>
+            <h2>サーバーメンバー対応表（50音順）</h2>
+            <button id="refresh-members-btn" class="btn btn-primary btn-sm">🔄 再読み込み</button>
           </div>
 
           <div id="members-view">
@@ -301,37 +282,13 @@
               <thead>
                 <tr>
                   <th>メンバー名</th>
-                  <th>Discord ユーザーID</th>
+                  <th>ユーザーID</th>
                 </tr>
               </thead>
               <tbody id="members-tbody-view">
-                </tbody>
+                <tr><td colspan="2" style="text-align:center;">読み込み中...</td></tr>
+              </tbody>
             </table>
-          </div>
-
-          <div id="members-edit" class="hidden">
-            <div class="add-member-form">
-              <input type="text" id="new-member-name" placeholder="メンバー名 (例: 山田太郎)">
-              <input type="text" id="new-member-id" placeholder="Discord ID (例: 123456789012345678)">
-              <button id="add-member-btn" class="btn btn-primary btn-sm">追加</button>
-            </div>
-
-            <table class="member-table">
-              <thead>
-                <tr>
-                  <th>メンバー名</th>
-                  <th>Discord ユーザーID</th>
-                  <th style="width: 80px;">操作</th>
-                </tr>
-              </thead>
-              <tbody id="members-tbody-edit">
-                </tbody>
-            </table>
-
-            <div class="action-buttons">
-              <button id="save-members-btn" class="btn btn-success">保存</button>
-              <button class="btn btn-secondary cancel-members-btn">キャンセル</button>
-            </div>
           </div>
         </div>
       </div>
@@ -344,13 +301,6 @@
     let currentTitle = localStorage.getItem('n84_title') ?? "📜 利用規約 - 灘校84回生＋αグループ";
     let currentMarkdownContent = localStorage.getItem('n84_content') || "ここに **利用規約** のテキストが表示されます。\n||ネタバレ注意|| の内容や __下線__ も選択可能です。";
     let currentColor = localStorage.getItem('n84_color') || "#3498db";
-    
-    // 初期メンバーデータ（localStorage対応）
-    let defaultMembers = [
-      { name: "管理者", id: "123456789012345678" },
-      { name: "メンバーA", id: "234567890123456789" }
-    ];
-    let membersData = JSON.parse(localStorage.getItem('n84_members')) || defaultMembers;
 
     let isBotOnline = true;
     let currentTab = "terms";
@@ -360,7 +310,6 @@
       localStorage.setItem('n84_title', currentTitle);
       localStorage.setItem('n84_content', currentMarkdownContent);
       localStorage.setItem('n84_color', currentColor);
-      localStorage.setItem('n84_members', JSON.stringify(membersData));
     }
 
     const hamburgerBtn = document.getElementById('hamburger-btn');
@@ -371,7 +320,7 @@
     
     const editVersionBtn = document.getElementById('edit-version-btn');
     const editTermsBtn = document.getElementById('edit-terms-btn');
-    const editMembersBtn = document.getElementById('edit-members-btn');
+    const refreshMembersBtn = document.getElementById('refresh-members-btn');
     
     const sectionVersion = document.getElementById('section-version');
     const versionView = document.getElementById('version-view');
@@ -399,14 +348,7 @@
     const saveTermsBtn = document.getElementById('save-terms-btn');
 
     const sectionMembers = document.getElementById('section-members');
-    const membersView = document.getElementById('members-view');
-    const membersEdit = document.getElementById('members-edit');
     const membersTbodyView = document.getElementById('members-tbody-view');
-    const membersTbodyEdit = document.getElementById('members-tbody-edit');
-    const newMemberName = document.getElementById('new-member-name');
-    const newMemberId = document.getElementById('new-member-id');
-    const addMemberBtn = document.getElementById('add-member-btn');
-    const saveMembersBtn = document.getElementById('save-members-btn');
 
     const btnBold = document.getElementById('btn-bold');
     const btnItalic = document.getElementById('btn-italic');
@@ -416,69 +358,40 @@
 
     const cancelVersionBtn = document.querySelector('.cancel-version-btn');
     const cancelTermsBtn = document.querySelector('.cancel-terms-btn');
-    const cancelMembersBtn = document.querySelector('.cancel-members-btn');
 
-    /* --- メンバー用関数の実装 --- */
-    function renderMembers() {
-      // 閲覧用テーブルの描画
-      membersTbodyView.innerHTML = membersData.map(m => `
-        <tr>
-          <td>${escapeHtml(m.name)}</td>
-          <td><code>${escapeHtml(m.id)}</code></td>
-        </tr>
-      `).join('');
+    /* --- Discord APIからメンバー一覧（50音順）を自動取得 --- */
+    async function fetchAndRenderMembers() {
+      membersTbodyView.innerHTML = `<tr><td colspan="2" style="text-align:center;">メンバー情報をDiscordから取得中...</td></tr>`;
 
-      // 編集用テーブルの描画
-      membersTbodyEdit.innerHTML = membersData.map((m, index) => `
-        <tr>
-          <td><input type="text" value="${escapeHtml(m.name)}" data-index="${index}" class="edit-m-name"></td>
-          <td><input type="text" value="${escapeHtml(m.id)}" data-index="${index}" class="edit-m-id"></td>
-          <td><button class="btn btn-danger btn-sm" onclick="removeMember(${index})">削除</button></td>
-        </tr>
-      `).join('');
+      try {
+        const res = await fetch('/.netlify/functions/get-members');
+        if (!res.ok) throw new Error('取得エラー');
+
+        const memberList = await res.json();
+
+        if (!memberList || memberList.length === 0) {
+          membersTbodyView.innerHTML = `<tr><td colspan="2" style="text-align:center;">メンバーが見つかりませんでした。</td></tr>`;
+          return;
+        }
+
+        membersTbodyView.innerHTML = memberList.map(m => `
+          <tr>
+            <td>${escapeHtml(m.name)}</td>
+            <td><code>${escapeHtml(m.id)}</code></td>
+          </tr>
+        `).join('');
+
+      } catch (err) {
+        console.error(err);
+        membersTbodyView.innerHTML = `<tr><td colspan="2" style="text-align:center; color: red;">メンバー一覧の取得に失敗しました。</td></tr>`;
+      }
     }
+
+    refreshMembersBtn.addEventListener('click', fetchAndRenderMembers);
 
     function escapeHtml(text) {
       return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
-
-    window.removeMember = function(index) {
-      membersData.splice(index, 1);
-      renderMembers();
-    };
-
-    addMemberBtn.addEventListener('click', () => {
-      const name = newMemberName.value.trim();
-      const id = newMemberId.value.trim();
-      if (!name || !id) {
-        alert("名前とDiscord IDの両方を入力してください。");
-        return;
-      }
-      membersData.push({ name, id });
-      newMemberName.value = "";
-      newMemberId.value = "";
-      renderMembers();
-    });
-
-    saveMembersBtn.addEventListener('click', () => {
-      const nameInputs = document.querySelectorAll('.edit-m-name');
-      const idInputs = document.querySelectorAll('.edit-m-id');
-      
-      let updatedData = [];
-      for (let i = 0; i < nameInputs.length; i++) {
-        const name = nameInputs[i].value.trim();
-        const id = idInputs[i].value.trim();
-        if (name && id) {
-          updatedData.push({ name, id });
-        }
-      }
-
-      membersData = updatedData;
-      saveToLocalStorage();
-      renderMembers();
-      alert("メンバー情報を保存しました。");
-      exitEditMode();
-    });
 
     /* --- リッチテキスト・マークダウン関連 --- */
     function formatDoc(cmd) {
@@ -584,7 +497,6 @@
       termsTextDisplay.innerHTML = markdownToHtml(currentMarkdownContent);
       versionDisplay.innerText = currentVersion;
       footerPreviewDisplay.innerText = `N84ボット v${currentVersion}`;
-      renderMembers();
     }
     renderView();
 
@@ -616,6 +528,7 @@
       } else if (tab === 'members') {
         menuMembers.classList.add('active');
         sectionMembers.classList.remove('hidden');
+        fetchAndRenderMembers(); // メンバータブ表示時に通信
       }
     }
 
@@ -648,29 +561,18 @@
       checkActiveStyles();
     });
 
-    editMembersBtn.addEventListener('click', () => {
-      editMembersBtn.classList.add('hidden');
-      membersView.classList.add('hidden');
-      membersEdit.classList.remove('hidden');
-      renderMembers();
-    });
-
     function exitEditMode() {
       editVersionBtn.classList.remove('hidden');
       editTermsBtn.classList.remove('hidden');
-      editMembersBtn.classList.remove('hidden');
 
       versionView.classList.remove('hidden');
       versionEdit.classList.add('hidden');
       termsView.classList.remove('hidden');
       termsEdit.classList.add('hidden');
-      membersView.classList.remove('hidden');
-      membersEdit.classList.add('hidden');
     }
 
     cancelVersionBtn.addEventListener('click', exitEditMode);
     cancelTermsBtn.addEventListener('click', exitEditMode);
-    cancelMembersBtn.addEventListener('click', exitEditMode);
 
     async function sendUpdateToDiscord(payload) {
       return await fetch('/.netlify/functions/update-terms', {
