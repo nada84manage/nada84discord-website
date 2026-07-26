@@ -188,6 +188,8 @@
   </div>
 
   <script>
+    const RENDER_API_URL = "https://nada84discord.onrender.com";
+
     let currentVersion = localStorage.getItem('n84_version') || "2.00.00";
     let currentTitle = localStorage.getItem('n84_title') ?? "📜 利用規約 - 灘校84回生＋αグループ";
     let currentMarkdownContent = localStorage.getItem('n84_content') || "ここに **利用規約** のテキストが表示されます。";
@@ -330,6 +332,78 @@
 
     cancelVersionBtn.addEventListener('click', exitEditMode);
     cancelTermsBtn.addEventListener('click', exitEditMode);
+
+    /* --- 保存・Discord送信処理の実装 --- */
+    
+    // バージョン設定の保存
+    document.getElementById('save-version-btn').addEventListener('click', async () => {
+      const major = vMajor.value.trim();
+      const minor = vMinor.value.trim();
+      const patch = vPatch.value.trim();
+
+      if (!major || !minor || !patch) {
+        alert('すべてのバージョン項目を入力してください。');
+        return;
+      }
+
+      currentVersion = `${major}.${minor}.${patch}`;
+      localStorage.setItem('n84_version', currentVersion);
+      
+      renderView();
+      exitEditMode();
+
+      // RenderサーバーへAPI通信を行う場合（必要に応じてエンドポイントを調整してください）
+      try {
+        const res = await fetch(`${RENDER_API_URL}/api/update-version`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ version: currentVersion })
+        });
+        if (res.ok) {
+          alert('バージョンを保存し、Discordへ反映しました！');
+        } else {
+          alert('保存しましたが、Discordへの反映リクエストに失敗しました。');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('ローカルに保存しましたが、サーバーへの通信に失敗しました。');
+      }
+    });
+
+    // 利用規約の保存
+    document.getElementById('save-terms-btn').addEventListener('click', async () => {
+      currentTitle = termsTitleInput.value;
+      currentColor = termsColorInput.value;
+      currentMarkdownContent = editor.innerText;
+
+      localStorage.setItem('n84_title', currentTitle);
+      localStorage.setItem('n84_color', currentColor);
+      localStorage.setItem('n84_content', currentMarkdownContent);
+
+      renderView();
+      exitEditMode();
+
+      // RenderサーバーへAPI通信を行う場合（必要に応じてエンドポイントを調整してください）
+      try {
+        const res = await fetch(`${RENDER_API_URL}/api/update-terms`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: currentTitle,
+            color: currentColor,
+            content: currentMarkdownContent
+          })
+        });
+        if (res.ok) {
+          alert('利用規約を保存し、Discordへ送信しました！');
+        } else {
+          alert('保存しましたが、Discordへの送信リクエストに失敗しました。');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('ローカルに保存しましたが、サーバーへの通信に失敗しました。');
+      }
+    });
   </script>
 </body>
 </html>
