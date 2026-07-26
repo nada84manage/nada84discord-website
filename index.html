@@ -333,9 +333,7 @@
     cancelVersionBtn.addEventListener('click', exitEditMode);
     cancelTermsBtn.addEventListener('click', exitEditMode);
 
-    /* --- 保存・Discord送信処理の実装 --- */
-    
-    // バージョン設定の保存
+    /* --- 保存・Discord送信処理 --- */
     document.getElementById('save-version-btn').addEventListener('click', async () => {
       const major = vMajor.value.trim();
       const minor = vMinor.value.trim();
@@ -352,7 +350,6 @@
       renderView();
       exitEditMode();
 
-      // RenderサーバーへAPI通信を行う場合（必要に応じてエンドポイントを調整してください）
       try {
         const res = await fetch(`${RENDER_API_URL}/api/update-version`, {
           method: 'POST',
@@ -370,7 +367,6 @@
       }
     });
 
-    // 利用規約の保存
     document.getElementById('save-terms-btn').addEventListener('click', async () => {
       currentTitle = termsTitleInput.value;
       currentColor = termsColorInput.value;
@@ -383,7 +379,6 @@
       renderView();
       exitEditMode();
 
-      // RenderサーバーへAPI通信を行う場合（必要に応じてエンドポイントを調整してください）
       try {
         const res = await fetch(`${RENDER_API_URL}/api/update-terms`, {
           method: 'POST',
