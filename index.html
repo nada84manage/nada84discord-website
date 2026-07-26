@@ -50,16 +50,6 @@
     .version-input-container { display: flex; align-items: center; font-size: 0.95rem; font-weight: bold; gap: 4px; }
     .version-part-first, .version-part { width: 45px; text-align: center; padding: 4px 6px; font-size: 0.85rem; border: 1px solid #ccc; border-radius: 4px; }
 
-    /* コンパクトテーブル */
-    .data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-    .data-table th, .data-table td { border: 1px solid #e2e8f0; padding: 6px 10px; text-align: left; }
-    .data-table th { background-color: #f8fafc; font-weight: bold; color: #2c3e50; }
-    .data-table tr:nth-child(even) { background-color: #fafafa; }
-
-    /* 検索バー・フィルター */
-    .search-box { padding: 5px 8px; font-size: 0.82rem; width: 200px; }
-    .log-filter-container { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-
     /* ボタン・ツールバー */
     .toolbar { display: flex; gap: 4px; margin-bottom: 4px; background: #eef2f5; padding: 4px; border-radius: 4px 4px 0 0; border: 1px solid #ccc; border-bottom: none; }
     .toolbar button { padding: 4px 8px; border: 1px solid #aaa; background: #fff; border-radius: 3px; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
@@ -79,7 +69,6 @@
     .hidden { display: none !important; }
 
     .footer-preview { margin-top: 10px; padding-top: 8px; border-top: 1px dashed #ccc; font-size: 0.8rem; color: #666; }
-    .log-type-tag { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem; font-weight: bold; background: #e2e8f0; color: #334155; white-space: nowrap; }
 
     @media (max-width: 768px) {
       .hamburger { display: block; }
@@ -99,8 +88,6 @@
       <ul>
         <li><a href="#" id="menu-version">bot設定</a></li>
         <li><a href="#" class="active" id="menu-terms">利用規約</a></li>
-        <li><a href="#" id="menu-members">メンバー</a></li>
-        <li><a href="#" id="menu-logs">詳細ログ</a></li>
       </ul>
     </nav>
 
@@ -197,106 +184,26 @@
         </div>
       </div>
 
-      <div id="section-members" class="hidden">
-        <div class="card">
-          <div class="card-header">
-            <h2>メンバー対応表（50音順）</h2>
-            <div style="display:flex; gap:6px;">
-              <input type="text" id="member-search-input" class="search-box" placeholder="名前やIDで検索...">
-              <button id="refresh-members-btn" class="btn btn-primary btn-sm">再読み込み</button>
-            </div>
-          </div>
-
-          <div id="members-view">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>メンバー名</th>
-                  <th>ユーザーID</th>
-                </tr>
-              </thead>
-              <tbody id="members-tbody-view">
-                <tr><td colspan="2" style="text-align:center;">読み込み中...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div id="section-logs" class="hidden">
-        <div class="card">
-          <div class="card-header">
-            <h2>詳細アクティビティログ</h2>
-            <button id="refresh-logs-btn" class="btn btn-primary btn-sm">再読み込み</button>
-          </div>
-
-          <div class="log-filter-container">
-            <select id="log-type-filter" class="search-box" style="width: auto;">
-              <option value="ALL">全イベント</option>
-              <optgroup label="監査ログ・アクティビティ">
-                <option value="サーバー更新">サーバー更新</option>
-                <option value="チャンネル作成">チャンネル作成</option>
-                <option value="チャンネル削除">チャンネル削除</option>
-                <option value="メンバーキック">メンバーキック</option>
-                <option value="メンバー更新">メンバー更新</option>
-                <option value="ロール作成">ロール作成</option>
-              </optgroup>
-            </select>
-            <input type="text" id="log-search-input" class="search-box" placeholder="実行者や内容で検索...">
-          </div>
-
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th style="width: 130px;">日時</th>
-                <th style="width: 120px;">イベント</th>
-                <th style="width: 130px;">実行したメンバー</th>
-                <th>詳細内容</th>
-              </tr>
-            </thead>
-            <tbody id="logs-tbody-view">
-              <tr><td colspan="4" style="text-align:center;">読み込み中...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
     </main>
   </div>
 
   <script>
-    // RenderのAPI URLを直接設定
-    const RENDER_API_URL = "https://nada84discord.onrender.com";
-
     let currentVersion = localStorage.getItem('n84_version') || "2.00.00";
     let currentTitle = localStorage.getItem('n84_title') ?? "📜 利用規約 - 灘校84回生＋αグループ";
     let currentMarkdownContent = localStorage.getItem('n84_content') || "ここに **利用規約** のテキストが表示されます。";
     let currentColor = localStorage.getItem('n84_color') || "#3498db";
-
-    let fetchedMembersData = [];
-    let fetchedLogsData = [];
 
     const hamburgerBtn = document.getElementById('hamburger-btn');
     const sidebar = document.getElementById('sidebar');
     
     const menuVersion = document.getElementById('menu-version');
     const menuTerms = document.getElementById('menu-terms');
-    const menuMembers = document.getElementById('menu-members');
-    const menuLogs = document.getElementById('menu-logs');
 
     const sectionVersion = document.getElementById('section-version');
     const sectionTerms = document.getElementById('section-terms');
-    const sectionMembers = document.getElementById('section-members');
-    const sectionLogs = document.getElementById('section-logs');
 
     const editVersionBtn = document.getElementById('edit-version-btn');
     const editTermsBtn = document.getElementById('edit-terms-btn');
-    const refreshMembersBtn = document.getElementById('refresh-members-btn');
-    const refreshLogsBtn = document.getElementById('refresh-logs-btn');
-    
-    const memberSearchInput = document.getElementById('member-search-input');
-    const logSearchInput = document.getElementById('log-search-input');
-    const logTypeFilter = document.getElementById('log-type-filter');
 
     const versionView = document.getElementById('version-view');
     const versionEdit = document.getElementById('version-edit');
@@ -316,9 +223,6 @@
     const colorCodeText = document.getElementById('color-code-text');
     const editor = document.getElementById('editor');
 
-    const membersTbodyView = document.getElementById('members-tbody-view');
-    const logsTbodyView = document.getElementById('logs-tbody-view');
-
     const btnBold = document.getElementById('btn-bold');
     const btnItalic = document.getElementById('btn-italic');
     const btnUnderline = document.getElementById('btn-underline');
@@ -327,93 +231,6 @@
 
     const cancelVersionBtn = document.querySelector('.cancel-version-btn');
     const cancelTermsBtn = document.querySelector('.cancel-terms-btn');
-
-    /* --- メンバー一覧取得 (Render API用) --- */
-    async function fetchAndRenderMembers() {
-      membersTbodyView.innerHTML = `<tr><td colspan="2" style="text-align:center;">読み込み中...</td></tr>`;
-      try {
-        const res = await fetch(`${RENDER_API_URL}/api/get-members`);
-        if (!res.ok) throw new Error("APIレスポンスエラー");
-        fetchedMembersData = await res.json();
-      } catch (err) {
-        console.error(err);
-        membersTbodyView.innerHTML = `<tr><td colspan="2" style="text-align:center; color:red;">メンバー一覧の取得に失敗しました</td></tr>`;
-        return;
-      }
-      renderFilteredMembers();
-    }
-
-    function renderFilteredMembers() {
-      const query = memberSearchInput.value.toLowerCase().trim();
-      const filtered = fetchedMembersData.filter(m => 
-        m.name.toLowerCase().includes(query) || m.id.includes(query)
-      );
-
-      if (filtered.length === 0) {
-        membersTbodyView.innerHTML = `<tr><td colspan="2" style="text-align:center;">該当するメンバーがいません</td></tr>`;
-        return;
-      }
-
-      membersTbodyView.innerHTML = filtered.map(m => `
-        <tr>
-          <td>${escapeHtml(m.name)}</td>
-          <td><code>${escapeHtml(m.id)}</code></td>
-        </tr>
-      `).join('');
-    }
-
-    memberSearchInput.addEventListener('input', renderFilteredMembers);
-    refreshMembersBtn.addEventListener('click', fetchAndRenderMembers);
-
-    /* --- 詳細ログ取得 (Render API用) --- */
-    async function fetchAndRenderLogs() {
-      logsTbodyView.innerHTML = `<tr><td colspan="4" style="text-align:center;">読み込み中...</td></tr>`;
-      try {
-        const res = await fetch(`${RENDER_API_URL}/api/get-logs`);
-        if (!res.ok) throw new Error("APIレスポンスエラー");
-        fetchedLogsData = await res.json();
-      } catch (err) {
-        console.error(err);
-        logsTbodyView.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">ログの取得に失敗しました</td></tr>`;
-        return;
-      }
-      renderFilteredLogs();
-    }
-
-    function renderFilteredLogs() {
-      const typeFilter = logTypeFilter.value;
-      const query = logSearchInput.value.toLowerCase().trim();
-
-      const filtered = fetchedLogsData.filter(log => {
-        const matchType = (typeFilter === "ALL") || (log.type === typeFilter);
-        const matchQuery = log.user.toLowerCase().includes(query) || 
-                           log.details.toLowerCase().includes(query) ||
-                           log.type.toLowerCase().includes(query);
-        return matchType && matchQuery;
-      });
-
-      if (filtered.length === 0) {
-        logsTbodyView.innerHTML = `<tr><td colspan="4" style="text-align:center;">該当するログがありません</td></tr>`;
-        return;
-      }
-
-      logsTbodyView.innerHTML = filtered.map(log => `
-        <tr>
-          <td style="color:#666; font-size:0.78rem;">${escapeHtml(log.time)}</td>
-          <td><span class="log-type-tag">${escapeHtml(log.type)}</span></td>
-          <td><b>${escapeHtml(log.user)}</b></td>
-          <td style="color:#444;">${escapeHtml(log.details)}</td>
-        </tr>
-      `).join('');
-    }
-
-    logTypeFilter.addEventListener('change', renderFilteredLogs);
-    logSearchInput.addEventListener('input', renderFilteredLogs);
-    refreshLogsBtn.addEventListener('click', fetchAndRenderLogs);
-
-    function escapeHtml(text) {
-      return text ? text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;") : "";
-    }
 
     /* --- テキスト装飾 --- */
     function formatDoc(cmd) {
@@ -466,8 +283,8 @@
     function switchTab(tab) {
       exitEditMode();
 
-      [menuVersion, menuTerms, menuMembers, menuLogs].forEach(m => m.classList.remove('active'));
-      [sectionVersion, sectionTerms, sectionMembers, sectionLogs].forEach(s => s.classList.add('hidden'));
+      [menuVersion, menuTerms].forEach(m => m.classList.remove('active'));
+      [sectionVersion, sectionTerms].forEach(s => s.classList.add('hidden'));
 
       if (tab === 'version') {
         menuVersion.classList.add('active');
@@ -475,21 +292,11 @@
       } else if (tab === 'terms') {
         menuTerms.classList.add('active');
         sectionTerms.classList.remove('hidden');
-      } else if (tab === 'members') {
-        menuMembers.classList.add('active');
-        sectionMembers.classList.remove('hidden');
-        fetchAndRenderMembers();
-      } else if (tab === 'logs') {
-        menuLogs.classList.add('active');
-        sectionLogs.classList.remove('hidden');
-        fetchAndRenderLogs();
       }
     }
 
     menuVersion.addEventListener('click', (e) => { e.preventDefault(); switchTab('version'); });
     menuTerms.addEventListener('click', (e) => { e.preventDefault(); switchTab('terms'); });
-    menuMembers.addEventListener('click', (e) => { e.preventDefault(); switchTab('members'); });
-    menuLogs.addEventListener('click', (e) => { e.preventDefault(); switchTab('logs'); });
 
     /* --- 編集モード --- */
     editVersionBtn.addEventListener('click', () => {
