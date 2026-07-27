@@ -9,7 +9,6 @@
     body { background-color: #f4f6f8; color: #333; }
     .admin-container { display: flex; min-height: 100vh; }
     
-    /* 左メニュー固定 */
     .sidebar {
       width: 220px;
       background-color: #2c3e50;
@@ -29,7 +28,6 @@
     .hamburger { display: none; position: fixed; top: 10px; left: 10px; z-index: 1000; font-size: 20px; background: #2c3e50; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; }
     .content { flex: 1; padding: 25px; min-width: 0; }
     
-    /* カード */
     .card { background: white; padding: 15px; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 15px; }
     .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px; flex-wrap: wrap; gap: 8px; }
     .card-header h2 { font-size: 1.1rem; }
@@ -40,17 +38,14 @@
     .color-picker-wrapper { display: flex; align-items: center; gap: 8px; }
     input[type="color"] { width: 32px; height: 32px; border: none; border-radius: 4px; cursor: pointer; }
 
-    /* bot状態 */
     .bot-status-container { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
     .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 12px; font-weight: bold; font-size: 0.85rem; color: white; }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: white; }
     .status-badge.online { background-color: #2ecc71; }
 
-    /* バージョン設定 */
     .version-input-container { display: flex; align-items: center; font-size: 0.95rem; font-weight: bold; gap: 4px; }
     .version-part-first, .version-part { width: 45px; text-align: center; padding: 4px 6px; font-size: 0.85rem; border: 1px solid #ccc; border-radius: 4px; }
 
-    /* ボタン・ツールバー */
     .toolbar { display: flex; gap: 4px; margin-bottom: 4px; background: #eef2f5; padding: 4px; border-radius: 4px 4px 0 0; border: 1px solid #ccc; border-bottom: none; }
     .toolbar button { padding: 4px 8px; border: 1px solid #aaa; background: #fff; border-radius: 3px; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
     .toolbar button.active { background-color: #3498db; color: white; }
@@ -113,7 +108,7 @@
           </div>
 
           <div id="version-view">
-            <p style="font-size:0.9rem;">現在のボットバージョン: <strong id="version-display">2.00.00</strong></p>
+            <p style="font-size:0.9rem;">現在のボットバージョン: <strong id="version-display">読み込み中...</strong></p>
           </div>
 
           <div id="version-edit" class="hidden">
@@ -143,10 +138,10 @@
           </div>
 
           <div id="terms-view">
-            <h3 id="terms-title-display" style="margin-bottom: 8px; font-size:1rem;">📜 利用規約 - 灘校84回生＋αグループ</h3>
-            <div id="terms-text-display" class="markdown-body">ここに利用規約のテキストが表示されます。</div>
+            <h3 id="terms-title-display" style="margin-bottom: 8px; font-size:1rem;">読み込み中...</h3>
+            <div id="terms-text-display" class="markdown-body">読み込み中...</div>
             <div class="footer-preview">
-              フッター: <span id="footer-preview-display">N84ボット v2.00.00</span>
+              フッター: <span id="footer-preview-display">読み込み中...</span>
             </div>
           </div>
 
@@ -190,10 +185,10 @@
   <script>
     const RENDER_API_URL = "https://nada84group.onrender.com";
 
-    let currentVersion = localStorage.getItem('n84_version') || "2.00.00";
-    let currentTitle = localStorage.getItem('n84_title') ?? "📜 利用規約 - 灘校84回生＋αグループ";
-    let currentMarkdownContent = localStorage.getItem('n84_content') || "ここに **利用規約** のテキストが表示されます。";
-    let currentColor = localStorage.getItem('n84_color') || "#3498db";
+    let currentVersion = "2.00.00";
+    let currentTitle = "";
+    let currentMarkdownContent = "";
+    let currentColor = "#3498db";
 
     const hamburgerBtn = document.getElementById('hamburger-btn');
     const sidebar = document.getElementById('sidebar');
@@ -233,6 +228,25 @@
 
     const cancelVersionBtn = document.querySelector('.cancel-version-btn');
     const cancelTermsBtn = document.querySelector('.cancel-terms-btn');
+
+    /* --- サーバーから最新データを取得して同期 --- */
+    async function fetchSettings() {
+      try {
+        const res = await fetch(`${RENDER_API_URL}/api/get-settings`);
+        if (!res.ok) throw new Error("データ取得失敗");
+        const data = await res.json();
+        
+        currentVersion = data.version;
+        currentTitle = data.title;
+        currentMarkdownContent = data.content;
+        currentColor = data.color;
+
+        renderView();
+      } catch (err) {
+        console.error(err);
+        alert('サーバーからのデータ取得に失敗しました。');
+      }
+    }
 
     /* --- テキスト装飾 --- */
     function formatDoc(cmd) {
@@ -276,7 +290,9 @@
       versionDisplay.innerText = currentVersion;
       footerPreviewDisplay.innerText = `N84ボット v${currentVersion}`;
     }
-    renderView();
+
+    // ページ読み込み時にサーバーから最新データを取得
+    fetchSettings();
 
     termsColorInput.addEventListener('input', (e) => colorCodeText.innerText = e.target.value);
     hamburgerBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
@@ -333,7 +349,7 @@
     cancelVersionBtn.addEventListener('click', exitEditMode);
     cancelTermsBtn.addEventListener('click', exitEditMode);
 
-    /* --- 保存・Discord送信処理 --- */
+    /* --- 保存・Discord反映処理 --- */
     document.getElementById('save-version-btn').addEventListener('click', async () => {
       const major = vMajor.value.trim();
       const minor = vMinor.value.trim();
@@ -344,59 +360,52 @@
         return;
       }
 
-      currentVersion = `${major}.${minor}.${patch}`;
-      localStorage.setItem('n84_version', currentVersion);
-      
-      renderView();
-      exitEditMode();
+      const newVersion = `${major}.${minor}.${patch}`;
 
       try {
         const res = await fetch(`${RENDER_API_URL}/api/update-version`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ version: currentVersion })
+          body: JSON.stringify({ version: newVersion })
         });
         if (res.ok) {
           alert('バージョンを保存し、Discordへ反映しました！');
+          fetchSettings(); // 最新データを再取得して画面を同期
+          exitEditMode();
         } else {
-          alert('保存しましたが、Discordへの反映リクエストに失敗しました。');
+          alert('サーバーでの保存に失敗しました。');
         }
       } catch (err) {
         console.error(err);
-        alert('ローカルに保存しましたが、サーバーへの通信に失敗しました。');
+        alert('サーバーへの通信に失敗しました。');
       }
     });
 
     document.getElementById('save-terms-btn').addEventListener('click', async () => {
-      currentTitle = termsTitleInput.value;
-      currentColor = termsColorInput.value;
-      currentMarkdownContent = editor.innerText;
-
-      localStorage.setItem('n84_title', currentTitle);
-      localStorage.setItem('n84_color', currentColor);
-      localStorage.setItem('n84_content', currentMarkdownContent);
-
-      renderView();
-      exitEditMode();
+      const newTitle = termsTitleInput.value;
+      const newColor = termsColorInput.value;
+      const newContent = editor.innerText;
 
       try {
         const res = await fetch(`${RENDER_API_URL}/api/update-terms`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            title: currentTitle,
-            color: currentColor,
-            content: currentMarkdownContent
+            title: newTitle,
+            color: newColor,
+            content: newContent
           })
         });
         if (res.ok) {
-          alert('利用規約を保存し、Discordへ送信しました！');
+          alert('利用規約を保存し、Discordのメッセージを更新しました！');
+          fetchSettings(); // 最新データを再取得して画面を同期
+          exitEditMode();
         } else {
-          alert('保存しましたが、Discordへの送信リクエストに失敗しました。');
+          alert('サーバーでの保存に失敗しました。');
         }
       } catch (err) {
         console.error(err);
-        alert('ローカルに保存しましたが、サーバーへの通信に失敗しました。');
+        alert('サーバーへの通信に失敗しました。');
       }
     });
   </script>
