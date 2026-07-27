@@ -46,6 +46,7 @@
     .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 12px; font-weight: bold; font-size: 0.85rem; color: white; }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: white; }
     .status-badge.online { background-color: #2ecc71; }
+    .status-badge.offline { background-color: #e74c3c; }
 
     .version-input-container { display: flex; align-items: center; font-size: 0.95rem; font-weight: bold; gap: 4px; }
     .version-part-first, .version-part { width: 45px; text-align: center; padding: 4px 6px; font-size: 0.85rem; border: 1px solid #ccc; border-radius: 4px; }
@@ -108,7 +109,9 @@
         <div class="card">
           <div class="card-header"><h2>botの状態</h2></div>
           <div class="bot-status-container">
-            <div class="status-badge online"><span class="status-dot"></span><span>オンライン</span></div>
+            <div id="bot-status-badge" class="status-badge offline">
+              <span class="status-dot"></span><span id="bot-status-text">オフライン（接続確認中...）</span>
+            </div>
           </div>
         </div>
         <div class="card">
@@ -355,6 +358,7 @@
   </div>
 
   <script>
+    // ★重要: Render等で動いているバックエンドのURLをここに正確に設定してください（末尾の `/` は無し）
     const RENDER_API_URL = "https://nada84group.onrender.com";
 
     let appState = {
@@ -388,13 +392,21 @@
     const sectionTemplateEditor = document.getElementById('section-template-editor');
 
     async function fetchSettings() {
+      const badge = document.getElementById('bot-status-badge');
+      const statusText = document.getElementById('bot-status-text');
       try {
         const res = await fetch(`${RENDER_API_URL}/api/get-settings`);
         if (!res.ok) throw new Error("取得失敗");
         appState = await res.json();
         renderView();
+
+        badge.className = "status-badge online";
+        statusText.innerText = "オンライン";
       } catch (err) {
         console.error(err);
+        badge.className = "status-badge offline";
+        statusText.innerText = "オフライン（サーバー接続エラー）";
+        alert("ローカルに保存しましたが、サーバーへの通信に失敗しました。\nバックエンドが起動しているか、URL（RENDER_API_URL）が正しいか確認してください。");
       }
     }
 
@@ -509,15 +521,21 @@
       if (!maj || !min || !pat) { alert('全てのバージョンを入力してください'); return; }
       const newVer = `${maj}.${min}.${pat}`;
 
-      const res = await fetch(`${RENDER_API_URL}/api/update-version`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ version: newVer })
-      });
-      if (res.ok) {
-        alert('バージョンを更新しました');
-        fetchSettings();
-        exitEditMode();
+      try {
+        const res = await fetch(`${RENDER_API_URL}/api/update-version`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ version: newVer })
+        });
+        if (res.ok) {
+          alert('バージョンを更新しました');
+          fetchSettings();
+          exitEditMode();
+        } else {
+          throw new Error("サーバーエラー");
+        }
+      } catch (err) {
+        alert('サーバーへの通信に失敗しました。');
       }
     });
 
@@ -526,17 +544,21 @@
       const newColor = termsColorInput.value;
       const newContent = editor.innerText;
 
-      const res = await fetch(`${RENDER_API_URL}/api/update-terms`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newTitle, color: newColor, content: newContent })
-      });
-      if (res.ok) {
-        alert('利用規約を保存し、Discord上のメッセージを更新しました！');
-        fetchSettings();
-        exitEditMode();
-      } else {
-        alert('保存に失敗しました');
+      try {
+        const res = await fetch(`${RENDER_API_URL}/api/update-terms`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: newTitle, color: newColor, content: newContent })
+        });
+        if (res.ok) {
+          alert('利用規約を保存し、Discord上のメッセージを更新しました！');
+          fetchSettings();
+          exitEditMode();
+        } else {
+          alert('保存に失敗しました');
+        }
+      } catch (err) {
+        alert('サーバーへの通信に失敗しました。');
       }
     });
 
@@ -635,25 +657,29 @@
       targetDate.setDate(targetDate.getDate() + seedFormState.dateOffset);
       let dateKey = targetDate.toISOString().split('T')[0];
 
-      const res = await fetch(`${RENDER_API_URL}/api/save-seed`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          dateKey,
-          periods: seedFormState.periods,
-          grid: seedFormState.grid,
-          remark: seedFormState.remark
-        })
-      });
+      try {
+        const res = await fetch(`${RENDER_API_URL}/api/save-seed`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            dateKey,
+            periods: seedFormState.periods,
+            grid: seedFormState.grid,
+            remark: seedFormState.remark
+          })
+        });
 
-      if (res.ok) {
-        const data = await res.json();
-        appState.seeds = data.seeds;
-        alert('シードを登録しました！');
-        menuTimetable.classList.add('active');
-        switchSection(sectionTimetable);
-      } else {
-        alert('シード登録に失敗しました');
+        if (res.ok) {
+          const data = await res.json();
+          appState.seeds = data.seeds;
+          alert('シードを登録しました！');
+          menuTimetable.classList.add('active');
+          switchSection(sectionTimetable);
+        } else {
+          alert('シード登録に失敗しました');
+        }
+      } catch (err) {
+        alert('サーバーへの通信に失敗しました。');
       }
     });
 
@@ -822,7 +848,7 @@
       let filteredEd = [];
       for (let i = 0; i < allRows.length; i++) {
         let row = allRows[i];
-        let hasCut = sendFormState.cuts.some(cutWord => row.includes(cutWord));
+        let hasCut = sendFormState.cuts.some(cutWord => row.some(cell => cell.includes(cutWord)));
         if (!hasCut) {
           filteredRows.push(row);
           filteredEd.push(allEdited[i]);
@@ -864,24 +890,28 @@
     document.getElementById('send-confirm-prev').addEventListener('click', () => switchSection(sectionSendEditor));
 
     document.getElementById('send-execute-btn').addEventListener('click', async () => {
-      const res = await fetch(`${RENDER_API_URL}/api/send-timetable`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          dateKey: sendFormState.dateKey,
-          customGrid: sendFormState.customGrid,
-          editedCells: sendFormState.editedCells,
-          cuts: sendFormState.cuts,
-          keys: sendFormState.keys
-        })
-      });
+      try {
+        const res = await fetch(`${RENDER_API_URL}/api/send-timetable`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            dateKey: sendFormState.dateKey,
+            customGrid: sendFormState.customGrid,
+            editedCells: sendFormState.editedCells,
+            cuts: sendFormState.cuts,
+            keys: sendFormState.keys
+          })
+        });
 
-      if (res.ok) {
-        alert('時間割をDiscordへ送信しました！');
-        menuTimetable.classList.add('active');
-        switchSection(sectionTimetable);
-      } else {
-        alert('時間割の送信に失敗しました');
+        if (res.ok) {
+          alert('時間割をDiscordへ送信しました！');
+          menuTimetable.classList.add('active');
+          switchSection(sectionTimetable);
+        } else {
+          alert('時間割の送信に失敗しました');
+        }
+      } catch (err) {
+        alert('サーバーへの通信に失敗しました。');
       }
     });
 
@@ -900,7 +930,6 @@
 
     function buildTemplateTable() {
       const tbody = document.getElementById('tmpl-tbody');
-      tbody.md = "";
       tbody.innerHTML = "";
       const tmplGrid = appState.templates[tmplFormState.day] || [];
       const rNumMap = ["１", "２", "３", "４", "５", "６", "７", "８"];
@@ -931,21 +960,25 @@
     }
 
     document.getElementById('tmpl-save-btn').addEventListener('click', async () => {
-      const res = await fetch(`${RENDER_API_URL}/api/save-templates`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          day: tmplFormState.day,
-          grid: appState.templates[tmplFormState.day]
-        })
-      });
+      try {
+        const res = await fetch(`${RENDER_API_URL}/api/save-templates`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            day: tmplFormState.day,
+            grid: appState.templates[tmplFormState.day]
+          })
+        });
 
-      if (res.ok) {
-        alert('テンプレートを保存しました！次回より有効になります。');
-        menuTimetable.classList.add('active');
-        switchSection(sectionTimetable);
-      } else {
-        alert('テンプレートの保存に失敗しました');
+        if (res.ok) {
+          alert('テンプレートを保存しました！次回より有効になります。');
+          menuTimetable.classList.add('active');
+          switchSection(sectionTimetable);
+        } else {
+          alert('テンプレートの保存に失敗しました');
+        }
+      } catch (err) {
+        alert('サーバーへの通信に失敗しました。');
       }
     });
   </script>
