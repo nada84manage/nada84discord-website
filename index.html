@@ -48,9 +48,10 @@
     .status-badge.online { background-color: #2ecc71; }
     .status-badge.offline { background-color: #e74c3c; }
 
+    /* 1桁分（1×1）と2桁分（1×2）のサイズに最適化した入力ボックス */
     .version-input-container { display: flex; align-items: center; font-size: 0.95rem; font-weight: bold; gap: 4px; white-space: nowrap; }
-    .version-part-first { width: 45px; text-align: center; padding: 4px 6px; font-size: 0.85rem; border: 1px solid #ccc; border-radius: 4px; }
-    .version-part { width: 50px; text-align: center; padding: 4px 6px; font-size: 0.85rem; border: 1px solid #ccc; border-radius: 4px; }
+    .version-part-first { width: 34px; text-align: center; padding: 4px 2px; font-size: 0.85rem; border: 1px solid #ccc; border-radius: 4px; }
+    .version-part { width: 44px; text-align: center; padding: 4px 2px; font-size: 0.85rem; border: 1px solid #ccc; border-radius: 4px; }
 
     .toolbar { display: flex; gap: 4px; margin-bottom: 4px; background: #eef2f5; padding: 4px; border-radius: 4px 4px 0 0; border: 1px solid #ccc; border-bottom: none; }
     .toolbar button { padding: 4px 8px; border: 1px solid #aaa; background: #fff; border-radius: 3px; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
@@ -470,7 +471,6 @@
     // バージョンの入力時自動フォーカス移動制御
     [vMajor, vMinor, vPatch].forEach((input, idx, arr) => {
       input.addEventListener('input', (e) => {
-        // 数字以外を除外
         e.target.value = e.target.value.replace(/[^0-9]/g, '');
         const maxLen = parseInt(e.target.getAttribute('maxlength'));
         if (e.target.value.length >= maxLen && arr[idx + 1]) {
@@ -527,7 +527,7 @@
         });
         if (res.ok) {
           alert('バージョンを更新しました');
-          fetchSettings();
+          await fetchSettings(); // 最新のバージョン情報を即座に反映させる
           exitEditMode();
         } else {
           throw new Error("サーバーエラー");
