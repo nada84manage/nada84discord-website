@@ -69,7 +69,6 @@
     button.secondary { background-color: #95a5a6; }
     button.secondary:hover { background-color: #7f8c8d; }
 
-    /* 時間割設定テーブル */
     .timetable-grid {
       width: 100%;
       border-collapse: collapse;
@@ -89,7 +88,7 @@
       border-radius: 4px;
     }
 
-    /* プレビュー表示エリア（横幅を維持してきれいに揃えるための設定） */
+    /* プレビュー表示エリアのみ等幅フォントと折り返し崩れ防止を適用 */
     .preview-container {
       background-color: #2f3136;
       color: #dcddde;
@@ -104,7 +103,6 @@
       border-left: 4px solid #7289da;
     }
 
-    .flex-row { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; }
     .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; }
     .checkbox-group label { font-weight: normal; display: flex; align-items: center; gap: 5px; cursor: pointer; }
   </style>
@@ -127,7 +125,7 @@
       <h1>Bot設定</h1>
       <div class="form-group">
         <label>現在のBotバージョン</label>
-        <input type="text" id="bot-version" placeholder="例: 2.07.00">
+        <input type="text" id="bot-version">
       </div>
       <button onclick="saveVersion()">バージョンを保存</button>
     </div>
@@ -152,7 +150,7 @@
     <div id="panel-timetable" class="panel">
       <h1>時間割管理・送信</h1>
       
-      <div id="step-seed" class="active">
+      <div id="step-seed">
         <div class="form-group">
           <label>対象日を選択</label>
           <input type="date" id="tt-date" onchange="loadSeedForDate()">
@@ -167,7 +165,7 @@
           </select>
         </div>
         
-        <div style="margin-bottom: 10px; display: flex; gap: 10px;">
+        <div style="margin-bottom: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
           <button class="secondary" onclick="applyTemplate('mon')">月曜テンプレ</button>
           <button class="secondary" onclick="applyTemplate('tue')">火曜テンプレ</button>
           <button class="secondary" onclick="applyTemplate('wed')">水曜テンプレ</button>
@@ -175,8 +173,7 @@
           <button class="secondary" onclick="applyTemplate('fri')">金曜テンプレ</button>
         </div>
 
-        <table class="timetable-grid" id="seed-table">
-          </table>
+        <table class="timetable-grid" id="seed-table"></table>
 
         <div class="form-group">
           <label>備考（連絡事項など）</label>
@@ -245,7 +242,6 @@
 </div>
 
 <script>
-  // バックエンドのURL（必要に応じてデプロイ先のURLに変更してください）
   const API_BASE = "https://nada84manage.onrender.com";
 
   let currentSettings = {};
@@ -253,7 +249,6 @@
   let currentTemplates = {};
 
   window.onload = async function() {
-    // 本日の日付をデフォルトセット
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('tt-date').value = today;
     await fetchSettings();
@@ -320,7 +315,6 @@
       currentGridData = seed.grid;
       document.getElementById('tt-remark').value = seed.remark || "";
     } else {
-      // デフォルトは曜日に合わせたテンプレートをロード
       const dateObj = new Date(dateKey);
       const dayMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
       const dayKey = dayMap[dateObj.getDay()];
@@ -329,13 +323,7 @@
         currentGridData = JSON.parse(JSON.stringify(currentTemplates[dayKey]));
         document.getElementById('tt-periods').value = currentGridData.length;
       } else {
-        // フォールバック
-        currentGridData = [
-          ["", "", "", ""],
-          ["", "", "", ""],
-          ["", "", "", ""],
-          ["", "", "", ""]
-        ];
+        currentGridData = [["","","",""],["","","",""],["","","",""],["","","",""]];
         document.getElementById('tt-periods').value = 4;
       }
       document.getElementById('tt-remark').value = "";
@@ -347,14 +335,13 @@
     const periods = parseInt(document.getElementById('tt-periods').value);
     const table = document.getElementById('seed-table');
     
-    // 行数が足りない場合の調整
     while(currentGridData.length < periods) {
       currentGridData.push(["", "", "", ""]);
     }
 
     let html = `<tr><th>＼</th><th>①</th><th>②</th><th>③</th><th>④</th></tr>`;
     for(let r = 0; r < periods; r++) {
-      const rNumMap = ['1', '2', '3', '4', '5', '6', '7', '8'];
+      const rNumMap = ['１', '２', '３', '４', '５', '６', '７', '８'];
       html += `<tr><td>${rNumMap[r]}</td>`;
       for(let c = 0; c < 4; c++) {
         let val = (currentGridData[r] && currentGridData[r][c]) ? currentGridData[r][c] : "";
@@ -379,7 +366,6 @@
   }
 
   async function goToStepOption() {
-    // シードをサーバーに保存しておく
     const dateKey = document.getElementById('tt-date').value;
     const periods = parseInt(document.getElementById('tt-periods').value);
     const remark = document.getElementById('tt-remark').value;
@@ -401,12 +387,10 @@
   }
 
   async function generatePreview() {
-    // オプション（カット、鍵）を収集してプレビューをサーバーに計算してもらう
     const dateKey = document.getElementById('tt-date').value;
     const cuts = Array.from(document.querySelectorAll('#cut-checkboxes input:checked')).map(el => el.value);
     const keys = Array.from(document.querySelectorAll('.key-check:checked')).map(el => el.value);
 
-    // 一旦シードを最新状態で保存
     const periods = parseInt(document.getElementById('tt-periods').value);
     const remark = document.getElementById('tt-remark').value;
     await fetch(`${API_BASE}/api/save-seed`, {
@@ -415,31 +399,22 @@
       body: JSON.stringify({ dateKey, periods, grid: currentGridData, remark })
     });
 
-    // バックエンド側で同じロジックでプレビューテキストを生成してもらうためリクエスト
-    // （今回は簡易的にクライアント側でシミュレーションするか、送信時と共通のプレビューAPIを作るのがベストですが、ここでは送信内容をきれいに整形して表示します）
-    
     document.getElementById('step-option').style.display = 'none';
     document.getElementById('step-preview').style.display = 'block';
 
-    // プレビュー表示用にバックエンドへプレビュー生成リクエストを送るか、サーバーのレスポンスを模倣
     fetchPreviewText(dateKey, cuts, keys);
   }
 
-  async function fetchPreviewText(dateKey, cuts, keys) {
+  function fetchPreviewText(dateKey, cuts, keys) {
     const box = document.getElementById('preview-box');
     box.textContent = "プレビューを生成中...";
 
     try {
-      // プレビュー用にバックエンドに計算を依頼するための一時的なリクエスト（または送信前のシミュレーション）
-      // バックエンドの /api/send-timetable は実際にDiscordに飛ばしてしまうため、プレビュー用に整形ロジックをJS側でも持つか、APIを分けると完璧です。
-      // ここでは簡易的にローカルでシミュレーションしてプレビューに出します
       const dateObj = new Date(dateKey);
       const month = dateObj.getMonth() + 1;
       const day = dateObj.getDate();
-      
       const periods = parseInt(document.getElementById('tt-periods').value);
       
-      // 列ごとの個別スライド・カット処理のプレビューシミュレーション
       let rawGrid = JSON.parse(JSON.stringify(currentGridData));
       let processedGrid = [];
       for (let r = 0; r < periods; r++) {
@@ -470,7 +445,7 @@
       let lines = [];
       lines.push("<@&1525664322783678544>");
       lines.push(`【Embedプレビュー】`);
-      lines.push(`タイトル: 84回生 ${month}/${day}の時間割`);
+      lines.push(`84回生 ${month}/${day}の時間割`);
       lines.push("");
       lines.push("｜＼｜①｜②｜③｜④｜");
       const rNumMap = ["１", "２", "３", "４", "５", "６", "７", "８"];
@@ -483,8 +458,6 @@
       }
       
       const remark = document.getElementById('tt-remark').value;
-      if (remark) lines.push(`備考：${remark}`);
-      
       let keyStr = keys.length > 0 ? keys.join(",") : "なし";
       lines.push(`鍵残留状況：${keyStr}`);
       
