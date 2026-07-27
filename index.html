@@ -34,7 +34,7 @@
 
     .form-group { margin-bottom: 12px; }
     .form-group label { display: block; font-weight: bold; margin-bottom: 4px; font-size: 0.85rem; }
-    input[type="text"], select { padding: 6px 10px; font-size: 0.85rem; border: 1px solid #ccc; border-radius: 4px; }
+    input[type="text"], select, textarea { padding: 6px 10px; font-size: 0.85rem; border: 1px solid #ccc; border-radius: 4px; width: 100%; }
     .color-picker-wrapper { display: flex; align-items: center; gap: 8px; }
     input[type="color"] { width: 32px; height: 32px; border: none; border-radius: 4px; cursor: pointer; }
 
@@ -65,6 +65,17 @@
 
     .footer-preview { margin-top: 10px; padding-top: 8px; border-top: 1px dashed #ccc; font-size: 0.8rem; color: #666; }
 
+    /* 時間割用テーブルデザイン */
+    .tt-table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 0.9rem; }
+    .tt-table th, .tt-table td { border: 1px solid #bbb; padding: 6px; text-align: center; }
+    .tt-table th { background: #eef2f5; }
+    .tt-table input { width: 40px; text-align: center; border: none; background: transparent; font-size: 0.9rem; outline: none; }
+    .tt-table td.editable { background: #fff9f9; }
+    .tt-table td.editable input { background: #ffe6e6; color: #c0392b; font-weight: bold; }
+    .tt-table td.gray-mode { color: #888; background: #f9f9f9; }
+
+    .disabled-option { color: #aaa; cursor: not-allowed; }
+
     @media (max-width: 768px) {
       .hamburger { display: block; }
       .sidebar { position: fixed; top: 0; left: 0; height: 100%; z-index: 999; transform: translateX(-100%); transition: transform 0.3s ease; }
@@ -83,6 +94,7 @@
       <ul>
         <li><a href="#" id="menu-version">bot設定</a></li>
         <li><a href="#" class="active" id="menu-terms">利用規約</a></li>
+        <li><a href="#" id="menu-timetable">時間割</a></li>
       </ul>
     </nav>
 
@@ -90,27 +102,19 @@
 
       <div id="section-version" class="hidden">
         <div class="card">
-          <div class="card-header">
-            <h2>botの状態</h2>
-          </div>
+          <div class="card-header"><h2>botの状態</h2></div>
           <div class="bot-status-container">
-            <div class="status-badge online">
-              <span class="status-dot"></span>
-              <span>オンライン</span>
-            </div>
+            <div class="status-badge online"><span class="status-dot"></span><span>オンライン</span></div>
           </div>
         </div>
-
         <div class="card">
           <div class="card-header">
             <h2>バージョン設定</h2>
             <button id="edit-version-btn" class="btn btn-primary btn-sm">編集</button>
           </div>
-
           <div id="version-view">
             <p style="font-size:0.9rem;">現在のボットバージョン: <strong id="version-display">読み込み中...</strong></p>
           </div>
-
           <div id="version-edit" class="hidden">
             <div class="form-group">
               <div class="version-input-container">
@@ -136,21 +140,16 @@
             <h2>利用規約</h2>
             <button id="edit-terms-btn" class="btn btn-primary btn-sm">編集</button>
           </div>
-
           <div id="terms-view">
             <h3 id="terms-title-display" style="margin-bottom: 8px; font-size:1rem;">読み込み中...</h3>
             <div id="terms-text-display" class="markdown-body">読み込み中...</div>
-            <div class="footer-preview">
-              フッター: <span id="footer-preview-display">読み込み中...</span>
-            </div>
+            <div class="footer-preview">フッター: <span id="footer-preview-display">読み込み中...</span></div>
           </div>
-
           <div id="terms-edit" class="hidden">
             <div class="form-group">
               <label for="terms-title-input">タイトル（任意）</label>
-              <input type="text" id="terms-title-input" style="width: 100%;" placeholder="タイトルなしにする場合は空欄">
+              <input type="text" id="terms-title-input" placeholder="タイトルなしにする場合は空欄">
             </div>
-
             <div class="form-group">
               <label for="terms-color-input">埋め込みカラー</label>
               <div class="color-picker-wrapper">
@@ -158,7 +157,6 @@
                 <span id="color-code-text" style="font-size:0.85rem;">#3498db</span>
               </div>
             </div>
-
             <div class="form-group">
               <label>規約本文（必須）</label>
               <div class="toolbar">
@@ -170,11 +168,178 @@
               </div>
               <div id="editor" class="editor-area" contenteditable="true"></div>
             </div>
-
             <div class="action-buttons">
               <button id="save-terms-btn" class="btn btn-success btn-sm">保存してDiscordへ送信</button>
               <button class="btn btn-secondary btn-sm cancel-terms-btn">キャンセル</button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="section-timetable" class="hidden">
+        <div class="card">
+          <div class="card-header"><h2>時間割管理</h2></div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; padding: 10px 0;">
+            <button id="goto-seed-btn" class="btn btn-primary">シードを設定</button>
+            <button id="goto-send-btn" class="btn btn-success">時間割送信</button>
+            <button id="goto-template-btn" class="btn btn-secondary">テンプレの編集</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="section-seed-form" class="hidden">
+        <div class="card">
+          <div class="card-header"><h2>シード設定：ステップ1 (情報入力)</h2></div>
+          <div class="form-group">
+            <label>授業数（必須）</label>
+            <div id="seed-periods-options">
+              <label><input type="radio" name="seed-periods" value="1"> １時間</label><br>
+              <label><input type="radio" name="seed-periods" value="2"> ２時間</label><br>
+              <label><input type="radio" name="seed-periods" value="3"> ３時間</label><br>
+              <label><input type="radio" name="seed-periods" value="4"> ４時間</label><br>
+              <label><input type="radio" name="seed-periods" value="5" checked> ５時間</label><br>
+              <label><input type="radio" name="seed-periods" value="6"> ６時間</label><br>
+              <label><input type="radio" name="seed-periods" value="7"> ７時間</label><br>
+              <label><input type="radio" name="seed-periods" value="8"> ８時間</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>登録する日</label>
+            <div id="seed-date-options">
+              <label><input type="radio" name="seed-date" value="0" checked> <span id="label-date-0">今日</span></label><br>
+              <label><input type="radio" name="seed-date" value="1"> <span id="label-date-1">明日</span></label><br>
+              <label><input type="radio" name="seed-date" value="2"> <span id="label-date-2">明後日</span></label>
+            </div>
+          </div>
+          <div class="action-buttons">
+            <button id="seed-step1-next" class="btn btn-primary">次へ</button>
+            <button class="btn btn-secondary back-to-tt-home">戻る</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="section-seed-grid" class="hidden">
+        <div class="card">
+          <div class="card-header"><h2 id="seed-grid-title">シード設定：ステップ2 (表入力)</h2></div>
+          <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 250px;">
+              <table class="tt-table" id="seed-table-element">
+                <thead>
+                  <tr><th>＼</th><th>①</th><th>②</th><th>③</th><th>④</th></tr>
+                </thead>
+                <tbody id="seed-tbody"></tbody>
+              </table>
+            </div>
+            <div style="width: 180px; display: flex; flex-direction: column; gap: 6px;">
+              <label style="font-weight:bold; font-size:0.85rem;">テンプレ読込</label>
+              <button class="btn btn-sm btn-secondary apply-tmpl" data-day="mon">月曜日のテンプレ</button>
+              <button class="btn btn-sm btn-secondary apply-tmpl" data-day="tue">火曜日のテンプレ</button>
+              <button class="btn btn-sm btn-secondary apply-tmpl" data-day="wed">水曜日のテンプレ</button>
+              <button class="btn btn-sm btn-secondary apply-tmpl" data-day="thu">木曜日のテンプレ</button>
+              <button class="btn btn-sm btn-secondary apply-tmpl" data-day="fri">金曜日のテンプレ</button>
+            </div>
+          </div>
+          <div class="form-group" style="margin-top: 15px;">
+            <label>備考欄</label>
+            <textarea id="seed-remark-input" rows="3" placeholder="備考を入力"></textarea>
+          </div>
+          <div class="action-buttons">
+            <button id="seed-step2-prev" class="btn btn-secondary">前へ</button>
+            <button id="seed-register-btn" class="btn btn-success">登録</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="section-send-form" class="hidden">
+        <div class="card">
+          <div class="card-header"><h2>時間割送信：いつの時間割を送信するか</h2></div>
+          <div class="form-group">
+            <div id="send-date-options">
+              <label><input type="radio" name="send-date" value="0"> <span id="send-label-date-0">今日</span></label><br>
+              <label><input type="radio" name="send-date" value="1"> <span id="send-label-date-1">明日</span></label><br>
+              <label><input type="radio" name="send-date" value="2"> <span id="send-label-date-2">明後日</span></label>
+            </div>
+          </div>
+          <div class="action-buttons">
+            <button id="send-step1-next" class="btn btn-primary">進む</button>
+            <button class="btn btn-secondary back-to-tt-home">戻る</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="section-send-editor" class="hidden">
+        <div class="card">
+          <div class="card-header"><h2>時間割送信：詳細・変更設定</h2></div>
+          <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+            <div style="width: 200px; background: #fafafa; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+              <div class="form-group">
+                <label style="font-size:0.8rem;">鍵残留状況</label>
+                <label style="font-size:0.8rem;"><input type="checkbox" name="key-status" value="1-1"> 1-1</label><br>
+                <label style="font-size:0.8rem;"><input type="checkbox" name="key-status" value="1-2"> 1-2</label><br>
+                <label style="font-size:0.8rem;"><input type="checkbox" name="key-status" value="1-3"> 1-3</label><br>
+                <label style="font-size:0.8rem;"><input type="checkbox" name="key-status" value="1-4"> 1-4</label>
+              </div>
+              <div class="form-group">
+                <label style="font-size:0.8rem;">カット選択</label>
+                <div id="cut-checkboxes-container" style="font-size:0.8rem;">シード科目から自動生成されます</div>
+              </div>
+            </div>
+            <div style="flex: 1; min-width: 250px;">
+              <table class="tt-table" id="send-table-element">
+                <thead>
+                  <tr><th>＼</th><th>①</th><th>②</th><th>③</th><th>④</th></tr>
+                </thead>
+                <tbody id="send-tbody"></tbody>
+              </table>
+              <div class="form-group" style="margin-top: 10px;">
+                <label>備考欄</label>
+                <textarea id="send-remark-input" rows="2"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="action-buttons">
+            <button id="send-step2-prev" class="btn btn-secondary">前へ</button>
+            <button id="send-step2-next" class="btn btn-primary">次へ (確認画面)</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="section-send-confirm" class="hidden">
+        <div class="card">
+          <div class="card-header"><h2>時間割送信：確認</h2></div>
+          <p style="font-size: 0.9rem; margin-bottom: 10px;">以下の内容でDiscordに送信します。</p>
+          <div id="send-preview-box" style="background: #2f3136; color: #fff; padding: 15px; border-radius: 6px; font-family: monospace; white-space: pre-wrap; font-size: 0.85rem;"></div>
+          <div class="action-buttons" style="margin-top: 15px;">
+            <button id="send-confirm-prev" class="btn btn-secondary">前へ</button>
+            <button id="send-execute-btn" class="btn btn-success">送信</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="section-template-editor" class="hidden">
+        <div class="card">
+          <div class="card-header"><h2>テンプレートの編集</h2></div>
+          <div class="form-group">
+            <label>曜日を選択</label>
+            <select id="tmpl-day-select">
+              <option value="mon">月曜日のテンプレ</option>
+              <option value="tue">火曜日のテンプレ</option>
+              <option value="wed">水曜日のテンプレ</option>
+              <option value="thu">木曜日のテンプレ</option>
+              <option value="fri">金曜日のテンプレ</option>
+            </select>
+          </div>
+          <div style="margin: 10px 0;">
+            <table class="tt-table" id="tmpl-table-element">
+              <thead>
+                <tr><th>＼</th><th>①</th><th>②</th><th>③</th><th>④</th></tr>
+              </thead>
+              <tbody id="tmpl-tbody"></tbody>
+            </table>
+          </div>
+          <div class="action-buttons">
+            <button id="tmpl-save-btn" class="btn btn-success">テンプレートを保存</button>
+            <button class="btn btn-secondary back-to-tt-home">戻る</button>
           </div>
         </div>
       </div>
@@ -185,91 +350,74 @@
   <script>
     const RENDER_API_URL = "https://nada84group.onrender.com";
 
-    let currentVersion = "2.00.00";
-    let currentTitle = "";
-    let currentMarkdownContent = "";
-    let currentColor = "#3498db";
+    let appState = {
+      version: "2.00.00",
+      title: "",
+      content: "",
+      color: "#3498db",
+      seeds: {},
+      templates: {}
+    };
+
+    // 一時入力保持用
+    let seedFormState = { periods: 5, dateOffset: 0, grid: [], remark: "" };
+    let sendFormState = { dateOffset: 0, customGrid: {}, editedCells: {}, cuts: [], keys: [], remark: "" };
+    let tmplFormState = { day: 'mon', grid: [] };
 
     const hamburgerBtn = document.getElementById('hamburger-btn');
     const sidebar = document.getElementById('sidebar');
     
     const menuVersion = document.getElementById('menu-version');
     const menuTerms = document.getElementById('menu-terms');
+    const menuTimetable = document.getElementById('menu-timetable');
 
     const sectionVersion = document.getElementById('section-version');
     const sectionTerms = document.getElementById('section-terms');
+    const sectionTimetable = document.getElementById('section-timetable');
+    const sectionSeedForm = document.getElementById('section-seed-form');
+    const sectionSeedGrid = document.getElementById('section-seed-grid');
+    const sectionSendForm = document.getElementById('section-send-form');
+    const sectionSendEditor = document.getElementById('section-send-editor');
+    const sectionSendConfirm = document.getElementById('section-send-confirm');
+    const sectionTemplateEditor = document.getElementById('section-template-editor');
 
-    const editVersionBtn = document.getElementById('edit-version-btn');
-    const editTermsBtn = document.getElementById('edit-terms-btn');
-
-    const versionView = document.getElementById('version-view');
-    const versionEdit = document.getElementById('version-edit');
-    const versionDisplay = document.getElementById('version-display');
-    const vMajor = document.getElementById('v-major');
-    const vMinor = document.getElementById('v-minor');
-    const vPatch = document.getElementById('v-patch');
-
-    const termsView = document.getElementById('terms-view');
-    const termsEdit = document.getElementById('terms-edit');
-    const termsTitleDisplay = document.getElementById('terms-title-display');
-    const termsTextDisplay = document.getElementById('terms-text-display');
-    const footerPreviewDisplay = document.getElementById('footer-preview-display');
-    
-    const termsTitleInput = document.getElementById('terms-title-input');
-    const termsColorInput = document.getElementById('terms-color-input');
-    const colorCodeText = document.getElementById('color-code-text');
-    const editor = document.getElementById('editor');
-
-    const btnBold = document.getElementById('btn-bold');
-    const btnItalic = document.getElementById('btn-italic');
-    const btnUnderline = document.getElementById('btn-underline');
-    const btnStrike = document.getElementById('btn-strike');
-    const btnSpoiler = document.getElementById('btn-spoiler');
-
-    const cancelVersionBtn = document.querySelector('.cancel-version-btn');
-    const cancelTermsBtn = document.querySelector('.cancel-terms-btn');
-
-    /* --- サーバーから最新データを取得して同期 --- */
+    // サーバーからデータを取得
     async function fetchSettings() {
       try {
         const res = await fetch(`${RENDER_API_URL}/api/get-settings`);
-        if (!res.ok) throw new Error("データ取得失敗");
-        const data = await res.json();
-        
-        currentVersion = data.version;
-        currentTitle = data.title;
-        currentMarkdownContent = data.content;
-        currentColor = data.color;
-
+        if (!res.ok) throw new Error("取得失敗");
+        appState = await res.json();
         renderView();
       } catch (err) {
         console.error(err);
-        alert('サーバーからのデータ取得に失敗しました。');
       }
     }
 
-    /* --- テキスト装飾 --- */
-    function formatDoc(cmd) {
-      document.execCommand(cmd, false, null);
-      editor.focus();
+    function renderView() {
+      document.getElementById('terms-title-display').innerText = appState.title || "";
+      document.getElementById('terms-title-display').style.display = appState.title.trim() ? "block" : "none";
+      document.getElementById('terms-text-display').innerHTML = markdownToHtml(appState.content);
+      document.getElementById('version-display').innerText = appState.version;
+      document.getElementById('footer-preview-display').innerText = `N84ボット v${appState.version}`;
+      setupDateLabels();
     }
 
-    function applySpoiler() {
-      const selection = window.getSelection();
-      if (!selection.rangeCount || selection.isCollapsed) return;
-      const range = selection.getRangeAt(0);
-      const span = document.createElement("span");
-      span.className = "spoiler";
-      span.appendChild(range.extractContents());
-      range.insertNode(span);
-      editor.focus();
+    // 日付ラベルの設定 (今日、明日、明後日)
+    function setupDateLabels() {
+      const now = new Date();
+      for (let i = 0; i < 3; i++) {
+        let d = new Date(now);
+        d.setDate(now.getDate() + i);
+        let m = d.getMonth() + 1;
+        let day = d.getDate();
+        let str = `${m}月${day}日`;
+        
+        let el0 = document.getElementById(`label-date-${i}`);
+        if (el0) el0.innerText = str;
+        let el1 = document.getElementById(`send-label-date-${i}`);
+        if (el1) el1.innerText = str;
+      }
     }
-
-    btnBold.addEventListener('click', () => formatDoc('bold'));
-    btnItalic.addEventListener('click', () => formatDoc('italic'));
-    btnUnderline.addEventListener('click', () => formatDoc('underline'));
-    btnStrike.addEventListener('click', () => formatDoc('strikeThrough'));
-    btnSpoiler.addEventListener('click', () => applySpoiler());
 
     function markdownToHtml(text) {
       if (!text) return "";
@@ -278,48 +426,50 @@
         .replace(/\|\|(.*?)\|\|/g, '<span class="spoiler" onclick="this.classList.add(\'revealed\')">$1</span>')
         .replace(/__(.*?)__/g, '<u>$1</u>')
         .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-        .replace(/~~(.*?)~~/g, '<s>$1</s>')
+        .replace(/~~(.*?)~~/g, '<s>$1<s>')
         .replace(/\*(.*?)\*/g, '<i>$1</i>')
         .replace(/\n/g, '<br>');
     }
 
-    function renderView() {
-      termsTitleDisplay.innerText = currentTitle || "";
-      termsTitleDisplay.style.display = currentTitle.trim() ? "block" : "none";
-      termsTextDisplay.innerHTML = markdownToHtml(currentMarkdownContent);
-      versionDisplay.innerText = currentVersion;
-      footerPreviewDisplay.innerText = `N84ボット v${currentVersion}`;
-    }
-
-    // ページ読み込み時にサーバーから最新データを取得
     fetchSettings();
-
-    termsColorInput.addEventListener('input', (e) => colorCodeText.innerText = e.target.value);
     hamburgerBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
 
-    /* --- タブ切り替え --- */
-    function switchTab(tab) {
-      exitEditMode();
-
-      [menuVersion, menuTerms].forEach(m => m.classList.remove('active'));
-      [sectionVersion, sectionTerms].forEach(s => s.classList.add('hidden'));
-
-      if (tab === 'version') {
-        menuVersion.classList.add('active');
-        sectionVersion.classList.remove('hidden');
-      } else if (tab === 'terms') {
-        menuTerms.classList.add('active');
-        sectionTerms.classList.remove('hidden');
-      }
+    // タブ切り替え管理
+    function switchSection(targetSec) {
+      [sectionVersion, sectionTerms, sectionTimetable, sectionSeedForm, sectionSeedGrid, sectionSendForm, sectionSendEditor, sectionSendConfirm, sectionTemplateEditor].forEach(s => s.classList.add('hidden'));
+      [menuVersion, menuTerms, menuTimetable].forEach(m => m.classList.remove('active'));
+      targetSec.classList.remove('hidden');
     }
 
-    menuVersion.addEventListener('click', (e) => { e.preventDefault(); switchTab('version'); });
-    menuTerms.addEventListener('click', (e) => { e.preventDefault(); switchTab('terms'); });
+    menuVersion.addEventListener('click', (e) => { e.preventDefault(); switchSection(sectionVersion); });
+    menuTerms.addEventListener('click', (e) => { e.preventDefault(); switchSection(sectionTerms); });
+    menuTimetable.addEventListener('click', (e) => { e.preventDefault(); switchSection(sectionTimetable); });
 
-    /* --- 編集モード --- */
+    document.querySelectorAll('.back-to-tt-home').forEach(btn => {
+      btn.addEventListener('click', () => {
+        menuTimetable.classList.add('active');
+        switchSection(sectionTimetable);
+      });
+    });
+
+    // 編集モード・テキスト装飾 (利用規約・バージョン)
+    const editVersionBtn = document.getElementById('edit-version-btn');
+    const editTermsBtn = document.getElementById('edit-terms-btn');
+    const versionView = document.getElementById('version-view');
+    const versionEdit = document.getElementById('version-edit');
+    const termsView = document.getElementById('terms-view');
+    const termsEdit = document.getElementById('terms-edit');
+    const vMajor = document.getElementById('v-major');
+    const vMinor = document.getElementById('v-minor');
+    const vPatch = document.getElementById('v-patch');
+    const termsTitleInput = document.getElementById('terms-title-input');
+    const termsColorInput = document.getElementById('terms-color-input');
+    const colorCodeText = document.getElementById('color-code-text');
+    const editor = document.getElementById('editor');
+
     editVersionBtn.addEventListener('click', () => {
       editVersionBtn.classList.add('hidden');
-      const parts = currentVersion.split('.');
+      const parts = appState.version.split('.');
       vMajor.value = parts[0] || '';
       vMinor.value = parts[1] || '';
       vPatch.value = parts[2] || '';
@@ -329,10 +479,10 @@
 
     editTermsBtn.addEventListener('click', () => {
       editTermsBtn.classList.add('hidden');
-      termsTitleInput.value = currentTitle;
-      termsColorInput.value = currentColor;
-      colorCodeText.innerText = currentColor;
-      editor.innerHTML = markdownToHtml(currentMarkdownContent);
+      termsTitleInput.value = appState.title;
+      termsColorInput.value = appState.color;
+      colorCodeText.innerText = appState.color;
+      editor.innerHTML = markdownToHtml(appState.content);
       termsView.classList.add('hidden');
       termsEdit.classList.remove('hidden');
     });
@@ -346,66 +496,451 @@
       termsEdit.classList.add('hidden');
     }
 
-    cancelVersionBtn.addEventListener('click', exitEditMode);
-    cancelTermsBtn.addEventListener('click', exitEditMode);
+    document.querySelector('.cancel-version-btn').addEventListener('click', exitEditMode);
+    document.querySelector('.cancel-terms-btn').addEventListener('click', exitEditMode);
+    termsColorInput.addEventListener('input', (e) => colorCodeText.innerText = e.target.value);
 
-    /* --- 保存・Discord反映処理 --- */
+    document.getElementById('btn-bold').addEventListener('click', () => { document.execCommand('bold', false, null); editor.focus(); });
+    document.getElementById('btn-italic').addEventListener('click', () => { document.execCommand('italic', false, null); editor.focus(); });
+    document.getElementById('btn-underline').addEventListener('click', () => { document.execCommand('underline', false, null); editor.focus(); });
+    document.getElementById('btn-strike').addEventListener('click', () => { document.execCommand('strikeThrough', false, null); editor.focus(); });
+    document.getElementById('btn-spoiler').addEventListener('click', () => {
+      const sel = window.getSelection();
+      if (!sel.rangeCount || sel.isCollapsed) return;
+      const range = sel.getRangeAt(0);
+      const span = document.createElement("span");
+      span.className = "spoiler";
+      span.appendChild(range.extractContents());
+      range.insertNode(span);
+      editor.focus();
+    });
+
+    // 保存ボタン (バージョン)
     document.getElementById('save-version-btn').addEventListener('click', async () => {
-      const major = vMajor.value.trim();
-      const minor = vMinor.value.trim();
-      const patch = vPatch.value.trim();
+      const maj = vMajor.value.trim();
+      const min = vMinor.value.trim();
+      const pat = vPatch.value.trim();
+      if (!maj || !min || !pat) { alert('全てのバージョンを入力してください'); return; }
+      const newVer = `${maj}.${min}.${pat}`;
 
-      if (!major || !minor || !patch) {
-        alert('すべてのバージョン項目を入力してください。');
-        return;
-      }
-
-      const newVersion = `${major}.${minor}.${patch}`;
-
-      try {
-        const res = await fetch(`${RENDER_API_URL}/api/update-version`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ version: newVersion })
-        });
-        if (res.ok) {
-          alert('バージョンを保存し、Discordへ反映しました！');
-          fetchSettings(); // 最新データを再取得して画面を同期
-          exitEditMode();
-        } else {
-          alert('サーバーでの保存に失敗しました。');
-        }
-      } catch (err) {
-        console.error(err);
-        alert('サーバーへの通信に失敗しました。');
+      const res = await fetch(`${RENDER_API_URL}/api/update-version`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ version: newVer })
+      });
+      if (res.ok) {
+        alert('バージョンを更新しました');
+        fetchSettings();
+        exitEditMode();
       }
     });
 
+    // 保存ボタン (利用規約 - 指定IDのメッセージ編集)
     document.getElementById('save-terms-btn').addEventListener('click', async () => {
       const newTitle = termsTitleInput.value;
       const newColor = termsColorInput.value;
       const newContent = editor.innerText;
 
-      try {
-        const res = await fetch(`${RENDER_API_URL}/api/update-terms`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: newTitle,
-            color: newColor,
-            content: newContent
-          })
-        });
-        if (res.ok) {
-          alert('利用規約を保存し、Discordのメッセージを更新しました！');
-          fetchSettings(); // 最新データを再取得して画面を同期
-          exitEditMode();
-        } else {
-          alert('サーバーでの保存に失敗しました。');
+      const res = await fetch(`${RENDER_API_URL}/api/update-terms`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: newTitle, color: newColor, content: newContent })
+      });
+      if (res.ok) {
+        alert('利用規約を保存し、Discord上のメッセージを更新しました！');
+        fetchSettings();
+        exitEditMode();
+      } else {
+        alert('保存に失敗しました');
+      }
+    });
+
+
+    /* ==========================================
+       時間割：シード設定関連のロジック
+       ========================================== */
+    document.getElementById('goto-seed-btn').addEventListener('click', () => switchSection(sectionSeedForm));
+
+    document.getElementById('seed-step1-next').addEventListener('click', () => {
+      const pRadio = document.querySelector('input[name="seed-periods"]:checked');
+      const dRadio = document.querySelector('input[name="seed-date"]:checked');
+      if (!pRadio) { alert('授業数を選択してください'); return; }
+      
+      seedFormState.periods = parseInt(pRadio.value);
+      seedFormState.dateOffset = parseInt(dRadio.value);
+
+      // 空のグリッドを作成
+      seedFormState.grid = [];
+      for (let r = 0; r < seedFormState.periods; r++) {
+        seedFormState.grid.push(["", "", "", ""]);
+      }
+      seedFormState.remark = "";
+      document.getElementById('seed-remark-input').value = "";
+
+      buildSeedTable();
+      switchSection(sectionSeedGrid);
+    });
+
+    function buildSeedTable() {
+      const tbody = document.getElementById('seed-tbody');
+      tbody.innerHTML = "";
+      const rNumMap = ["１", "２", "３", "４", "５", "６", "７", "８"];
+
+      for (let r = 0; r < seedFormState.periods; r++) {
+        let tr = document.createElement('tr');
+        let th = document.createElement('th');
+        th.innerText = rNumMap[r];
+        tr.appendChild(th);
+
+        for (let c = 0; c < 4; c++) {
+          let td = document.createElement('td');
+          let input = document.createElement('input');
+          input.type = "text";
+          input.maxLength = 5; // 入力は自由に受け付け、保存時に1文字制限
+          input.value = seedFormState.grid[r][c] || "";
+          input.addEventListener('input', (e) => {
+            seedFormState.grid[r][c] = e.target.value;
+          });
+          td.appendChild(input);
+          tr.appendChild(td);
         }
-      } catch (err) {
-        console.error(err);
-        alert('サーバーへの通信に失敗しました。');
+        tbody.appendChild(tr);
+      }
+    }
+
+    // テンプレ読込ボタン
+    document.querySelectorAll('.apply-tmpl').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        let dayKey = e.target.getAttribute('data-day');
+        let tmpl = appState.templates[dayKey];
+        if (!tmpl) return;
+
+        for (let r = 0; r < seedFormState.periods; r++) {
+          for (let c = 0; c < 4; c++) {
+            if (tmpl[r] && tmpl[r][c] !== undefined) {
+              seedFormState.grid[r][c] = tmpl[r][c];
+            } else {
+              seedFormState.grid[r][c] = "";
+            }
+          }
+        }
+        buildSeedTable();
+      });
+    });
+
+    document.getElementById('seed-step2-prev').addEventListener('click', () => switchSection(sectionSeedForm));
+
+    document.getElementById('seed-register-btn').addEventListener('click', async () => {
+      // 全部埋まっているかチェック
+      for (let r = 0; r < seedFormState.periods; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (!seedFormState.grid[r][c] || seedFormState.grid[r][c].trim() === "") {
+            alert('表がすべて埋まっていないと登録できません。');
+            return;
+          }
+        }
+      }
+
+      seedFormState.remark = document.getElementById('seed-remark-input').value;
+
+      // 日付キー文字列の作成
+      let targetDate = new Date();
+      targetDate.setDate(targetDate.getDate() + seedFormState.dateOffset);
+      let dateKey = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD
+
+      const res = await fetch(`${RENDER_API_URL}/api/save-seed`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dateKey,
+          periods: seedFormState.periods,
+          grid: seedFormState.grid,
+          remark: seedFormState.remark
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        appState.seeds = data.seeds;
+        alert('シードを登録しました！');
+        menuTimetable.classList.add('active');
+        switchSection(sectionTimetable);
+      } else {
+        alert('シード登録に失敗しました');
+      }
+    });
+
+
+    /* ==========================================
+       時間割：送信・変更関連のロジック
+       ========================================== */
+    document.getElementById('goto-send-btn').addEventListener('click', () => {
+      // シード未登録の日付を灰色にする
+      const now = new Date();
+      for (let i = 0; i < 3; i++) {
+        let d = new Date(now);
+        d.setDate(now.getDate() + i);
+        let dKey = d.toISOString().split('T')[0];
+        let radio = document.querySelector(`input[name="send-date"][value="${i}"]`);
+        let labelSpan = document.getElementById(`send-label-date-${i}`).parentNode;
+
+        if (!appState.seeds[dKey]) {
+          radio.disabled = true;
+          labelSpan.classList.add('disabled-option');
+        } else {
+          radio.disabled = false;
+          labelSpan.classList.remove('disabled-option');
+        }
+      }
+      switchSection(sectionSendForm);
+    });
+
+    document.getElementById('send-step1-next').addEventListener('click', () => {
+      const sel = document.querySelector('input[name="send-date"]:checked');
+      if (!sel) { alert('送信する時間割を選択してください'); return; }
+      
+      let offset = parseInt(sel.value);
+      let targetDate = new Date();
+      targetDate.setDate(targetDate.getDate() + offset);
+      let dKey = targetDate.toISOString().split('T')[0];
+
+      sendFormState.dateOffset = offset;
+      sendFormState.dateKey = dKey;
+      sendFormState.seedData = appState.seeds[dKey];
+      sendFormState.customGrid = {};
+      sendFormState.editedCells = {};
+      sendFormState.cuts = [];
+      sendFormState.keys = [];
+      sendFormState.remark = sendFormState.seedData.remark || "";
+
+      document.getElementById('send-remark-input').value = sendFormState.remark;
+
+      buildSendEditor();
+      switchSection(sectionSendEditor);
+    });
+
+    function buildSendEditor() {
+      // 鍵残留状況のチェックボックスリセット
+      document.querySelectorAll('input[name="key-status"]').forEach(ch => ch.checked = false);
+
+      // カット用チェックボックスをシード科目から自動生成 (重複除外)
+      let uniqueSubjects = new Set();
+      let seedGrid = sendFormState.seedData.grid;
+      seedGrid.forEach(row => row.forEach(val => { if (val) uniqueSubjects.add(val); }));
+
+      let cutContainer = document.getElementById('cut-checkboxes-container');
+      cutContainer.innerHTML = "";
+      uniqueSubjects.forEach(subj => {
+        let label = document.createElement('label');
+        let chk = document.createElement('input');
+        chk.type = "checkbox";
+        chk.name = "cut-subj";
+        chk.value = subj;
+        label.appendChild(chk);
+        label.appendChild(document.createTextNode(` ${subj}カット`));
+        label.style.display = "block";
+        cutContainer.appendChild(label);
+      });
+
+      // テーブルの構築
+      const tbody = document.getElementById('send-tbody');
+      tbody.innerHTML = "";
+      const periods = sendFormState.seedData.periods;
+      const rNumMap = ["１", "２", "３", "４", "５", "６", "７", "８"];
+
+      for (let r = 0; r < periods; r++) {
+        let tr = document.createElement('tr');
+        let th = document.createElement('th');
+        th.innerText = rNumMap[r];
+        tr.appendChild(th);
+
+        for (let c = 0; c < 4; c++) {
+          let td = document.createElement('td');
+          let seedVal = seedGrid[r][c] || "";
+
+          // 仕様：前の文字は灰色として表に書かれており、セルを選択すると黄色/淡赤になり入力可能になる
+          let input = document.createElement('input');
+          input.type = "text";
+          input.value = seedVal; // 初期はシードの文字が入っている
+          td.classList.add('gray-mode'); // 灰色表示
+
+          input.addEventListener('focus', () => {
+            td.classList.remove('gray-mode');
+            td.classList.add('editable');
+            // 黄色/淡赤状態にするためにインプット値をクリア、または編集可能にする
+            if (input.value === seedVal && !sendFormState.customGrid[`${r}-${c}`]) {
+              input.value = "";
+            }
+          });
+
+          input.addEventListener('input', (e) => {
+            let val = e.target.value;
+            if (!sendFormState.customGrid[r]) sendFormState.customGrid[r] = {};
+            sendFormState.customGrid[r][c] = val;
+
+            if (val.trim() !== "") {
+              sendFormState.editedCells[`${r}-${c}`] = true;
+            } else {
+              delete sendFormState.editedCells[`${r}-${c}`];
+            }
+          });
+
+          input.addEventListener('blur', () => {
+            if (!input.value) {
+              td.classList.add('gray-mode');
+              td.classList.remove('editable');
+              input.value = seedVal; // 戻す
+            }
+          });
+
+          td.appendChild(input);
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+    }
+
+    document.getElementById('send-step2-prev').addEventListener('click', () => switchSection(sectionSendForm));
+
+    document.getElementById('send-step2-next').addEventListener('click', () => {
+      // 各種設定の収集
+      sendFormState.keys = [];
+      document.querySelectorAll('input[name="key-status"]:checked').forEach(ch => sendFormState.keys.push(ch.value));
+
+      sendFormState.cuts = [];
+      document.querySelectorAll('input[name="cut-subj"]:checked').forEach(ch => sendFormState.cuts.push(ch.value));
+
+      sendFormState.remark = document.getElementById('send-remark-input').value;
+
+      // プレビューの構築
+      buildPreview();
+      switchSection(sectionSendConfirm);
+    });
+
+    function buildPreview() {
+      let seedGrid = sendFormState.seedData.grid;
+      let periods = sendFormState.seedData.periods;
+      let rNumMap = ["１", "２", "３", "４", "５", "６", "７", "８"];
+      let lines = ["｜＼｜①｜②｜③｜④｜"];
+
+      for (let r = 0; r < periods; r++) {
+        let lineStr = `｜${rNumMap[r]}｜`;
+        for (let c = 0; c < 4; c++) {
+          let val = seedGrid[r][c];
+          if (sendFormState.customGrid[r] && sendFormState.customGrid[r][c] !== undefined && sendFormState.customGrid[r][c] !== "") {
+            val = sendFormState.customGrid[r][c];
+          }
+          let isEdited = sendFormState.editedCells[`${r}-${c}`];
+          if (isEdited) {
+            lineStr += `**${val}**｜`;
+          } else {
+            lineStr += `${val}｜`;
+          }
+        }
+        lines.push(lineStr);
+      }
+
+      let desc = lines.join("\n");
+      if (sendFormState.remark) desc += `\n\n備考：${sendFormState.remark}`;
+      let keyStr = sendFormState.keys.length > 0 ? sendFormState.keys.join(",") : "なし";
+      desc += `\n\n鍵残留状況：${keyStr}`;
+      let cutStr = sendFormState.cuts.length > 0 ? sendFormState.cuts.join(",") + "カット" : "カットなし";
+      desc += `\n${cutStr}`;
+
+      let dObj = new Date(sendFormState.dateKey);
+      let title = `84回生 ${dObj.getMonth()+1}/${dObj.getDate()}の時間割`;
+
+      document.getElementById('send-preview-box').innerText = `<@1525664322783678544>\n\n【Embedプレビュー】\nタイトル: ${title}\n\n${desc}`;
+    }
+
+    document.getElementById('send-confirm-prev').addEventListener('click', () => switchSection(sectionSendEditor));
+
+    document.getElementById('send-execute-btn').addEventListener('click', async () => {
+      const res = await fetch(`${RENDER_API_URL}/api/send-timetable`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dateKey: sendFormState.dateKey,
+          customGrid: sendFormState.customGrid,
+          editedCells: sendFormState.editedCells,
+          cuts: sendFormState.cuts,
+          keys: sendFormState.keys
+        })
+      });
+
+      if (res.ok) {
+        alert('時間割をDiscordへ送信しました！');
+        menuTimetable.classList.add('active');
+        switchSection(sectionTimetable);
+      } else {
+        alert('時間割の送信に失敗しました');
+      }
+    });
+
+
+    /* ==========================================
+       時間割：テンプレート編集関連のロジック
+       ========================================== */
+    document.getElementById('goto-template-btn').addEventListener('click', () => {
+      tmplFormState.day = 'mon';
+      document.getElementById('tmpl-day-select').value = 'mon';
+      buildTemplateTable();
+      switchSection(sectionTemplateEditor);
+    });
+
+    document.getElementById('tmpl-day-select').addEventListener('change', (e) => {
+      tmplFormState.day = e.target.value;
+      buildTemplateTable();
+    });
+
+    function buildTemplateTable() {
+      const tbody = document.getElementById('tmpl-tbody');
+      tbody.innerHTML = "";
+      const tmplGrid = appState.templates[tmplFormState.day] || [];
+      const rNumMap = ["１", "２", "３", "４", "５", "６", "７", "8"];
+
+      // テンプレはデフォルト最大7時間行で表示
+      for (let r = 0; r < 7; r++) {
+        let tr = document.createElement('tr');
+        let th = document.createElement('th');
+        th.innerText = rNumMap[r];
+        tr.appendChild(th);
+
+        for (let c = 0; c < 4; c++) {
+          let td = document.createElement('td');
+          let input = document.createElement('input');
+          input.type = "text";
+          input.value = (tmplGrid[r] && tmplGrid[r][c]) ? tmplGrid[r][c] : "";
+          
+          input.addEventListener('input', (e) => {
+            if (!appState.templates[tmplFormState.day][r]) {
+              appState.templates[tmplFormState.day][r] = ["", "", "", ""];
+            }
+            appState.templates[tmplFormState.day][r][c] = e.target.value;
+          });
+          td.appendChild(input);
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+    }
+
+    document.getElementById('tmpl-save-btn').addEventListener('click', async () => {
+      const res = await fetch(`${RENDER_API_URL}/api/save-templates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          day: tmplFormState.day,
+          grid: appState.templates[tmplFormState.day]
+        })
+      });
+
+      if (res.ok) {
+        alert('テンプレートを保存しました！次回より有効になります。');
+        menuTimetable.classList.add('active');
+        switchSection(sectionTimetable);
+      } else {
+        alert('テンプレートの保存に失敗しました');
       }
     });
   </script>
