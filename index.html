@@ -309,18 +309,6 @@
           </div>
           <div class="action-buttons">
             <button id="send-step2-prev" class="btn btn-secondary">前へ</button>
-            <button id="send-step2-next" class="btn btn-primary">次へ</button>
-          </div>
-        </div>
-      </div>
-
-      <div id="section-send-confirm" class="hidden">
-        <div class="card">
-          <div class="card-header"><h2>時間割送信：確認</h2></div>
-          <p style="font-size: 0.9rem; margin-bottom: 10px;">以下の内容でDiscordに送信します。</p>
-          <div id="send-preview-box" style="background: #2f3136; color: #fff; padding: 15px; border-radius: 6px; font-family: monospace, Consolas, Courier, monospace; white-space: pre-wrap; word-break: break-all; font-size: 0.85rem; line-height: 1.5;"></div>
-          <div class="action-buttons" style="margin-top: 15px;">
-            <button id="send-confirm-prev" class="btn btn-secondary">前へ</button>
             <button id="send-execute-btn" class="btn btn-success">送信</button>
           </div>
         </div>
@@ -358,7 +346,6 @@
   </div>
 
   <script>
-    // ★重要: Render等で動いているバックエンドのURLをここに正確に設定してください（末尾の `/` は無し）
     const RENDER_API_URL = "https://nada84group.onrender.com";
 
     let appState = {
@@ -388,7 +375,6 @@
     const sectionSeedGrid = document.getElementById('section-seed-grid');
     const sectionSendForm = document.getElementById('section-send-form');
     const sectionSendEditor = document.getElementById('section-send-editor');
-    const sectionSendConfirm = document.getElementById('section-send-confirm');
     const sectionTemplateEditor = document.getElementById('section-template-editor');
 
     async function fetchSettings() {
@@ -406,7 +392,6 @@
         console.error(err);
         badge.className = "status-badge offline";
         statusText.innerText = "オフライン（サーバー接続エラー）";
-        alert("ローカルに保存しましたが、サーバーへの通信に失敗しました。\nバックエンドが起動しているか、URL（RENDER_API_URL）が正しいか確認してください。");
       }
     }
 
@@ -451,7 +436,7 @@
     hamburgerBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
 
     function switchSection(targetSec) {
-      [sectionVersion, sectionTerms, sectionTimetable, sectionSeedForm, sectionSeedGrid, sectionSendForm, sectionSendEditor, sectionSendConfirm, sectionTemplateEditor].forEach(s => s.classList.add('hidden'));
+      [sectionVersion, sectionTerms, sectionTimetable, sectionSeedForm, sectionSeedGrid, sectionSendForm, sectionSendEditor, sectionTemplateEditor].forEach(s => s.classList.add('hidden'));
       [menuVersion, menuTerms, menuTimetable].forEach(m => m.classList.remove('active'));
       targetSec.classList.remove('hidden');
     }
@@ -806,7 +791,8 @@
 
     document.getElementById('send-step2-prev').addEventListener('click', () => switchSection(sectionSendForm));
 
-    document.getElementById('send-step2-next').addEventListener('click', () => {
+    // 確認ページを削除し、ステップ2の「送信」ボタンで直接Discordへ送信する処理
+    document.getElementById('send-execute-btn').addEventListener('click', async () => {
       sendFormState.keys = [];
       document.querySelectorAll('input[name="key-status"]:checked').forEach(ch => sendFormState.keys.push(ch.value));
 
@@ -815,81 +801,6 @@
 
       sendFormState.remark = document.getElementById('send-remark-input').value;
 
-      buildPreview();
-      switchSection(sectionSendConfirm);
-    });
-
-    function buildPreview() {
-      let seedGrid = sendFormState.seedData.grid;
-      let periods = sendFormState.seedData.periods;
-      let rNumMap = ["１", "２", "３", "４", "５", "６", "７", "８"];
-      
-      let allRows = [];
-      let allEdited = [];
-      for (let r = 0; r < periods; r++) {
-        let rowArr = [];
-        let rowEd = [];
-        for (let c = 0; c < 4; c++) {
-          let val = seedGrid[r][c];
-          let isEdited = false;
-          if (sendFormState.customGrid[r] && sendFormState.customGrid[r][c] !== undefined && sendFormState.customGrid[r][c] !== "") {
-            val = sendFormState.customGrid[r][c];
-            isEdited = true;
-          }
-          if (sendFormState.editedCells[`${r}-${c}`]) isEdited = true;
-          rowArr.push(val);
-          rowEd.push(isEdited);
-        }
-        allRows.push(rowArr);
-        allEdited.push(rowEd);
-      }
-
-      let filteredRows = [];
-      let filteredEd = [];
-      for (let i = 0; i < allRows.length; i++) {
-        let row = allRows[i];
-        let hasCut = sendFormState.cuts.some(cutWord => row.some(cell => cell.includes(cutWord)));
-        if (!hasCut) {
-          filteredRows.push(row);
-          filteredEd.push(allEdited[i]);
-        }
-      }
-      while (filteredRows.length < periods) {
-        filteredRows.push(["／", "／", "／", "／"]);
-        filteredEd.push([false, false, false, false]);
-      }
-
-      let lines = ["｜＼｜①｜②｜③｜④｜"];
-      for (let r = 0; r < periods; r++) {
-        let lineStr = `｜${rNumMap[r]}｜`;
-        for (let c = 0; c < 4; c++) {
-          let val = filteredRows[r][c];
-          let isEdited = filteredEd[r][c];
-          if (isEdited && val !== "／" && val !== "") {
-            lineStr += `**${val}**｜`;
-          } else {
-            lineStr += `${val}｜`;
-          }
-        }
-        lines.push(lineStr);
-      }
-
-      let desc = lines.join("\n");
-      if (sendFormState.remark && sendFormState.remark.trim() !== "") desc += `\n${sendFormState.remark}`;
-      let keyStr = sendFormState.keys.length > 0 ? sendFormState.keys.join(",") : "なし";
-      desc += `\n鍵残留状況：${keyStr}`;
-      let cutStr = sendFormState.cuts.length > 0 ? sendFormState.cuts.join(",") + "カット" : "カットなし";
-      desc += `\n${cutStr}`;
-
-      let dObj = new Date(sendFormState.dateKey);
-      let title = `84回生 ${dObj.getMonth()+1}/${dObj.getDate()}の時間割`;
-
-      document.getElementById('send-preview-box').innerText = `<@&1525664322783678544>\n\n【Embedプレビュー】\nタイトル: ${title}\n\n${desc}`;
-    }
-
-    document.getElementById('send-confirm-prev').addEventListener('click', () => switchSection(sectionSendEditor));
-
-    document.getElementById('send-execute-btn').addEventListener('click', async () => {
       try {
         const res = await fetch(`${RENDER_API_URL}/api/send-timetable`, {
           method: 'POST',
