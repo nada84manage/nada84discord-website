@@ -34,6 +34,11 @@
 
     .form-group { margin-bottom: 12px; }
     .form-group label { display: block; font-weight: bold; margin-bottom: 4px; font-size: 0.85rem; }
+    
+    /* ラジオボタン間の感覚を調整 */
+    .radio-group label { display: block; margin-bottom: 8px; font-size: 0.9rem; cursor: pointer; }
+    .radio-group input[type="radio"] { margin-right: 6px; }
+
     input[type="text"], select, textarea { padding: 6px 10px; font-size: 0.85rem; border: 1px solid #ccc; border-radius: 4px; width: 100%; }
     .color-picker-wrapper { display: flex; align-items: center; gap: 8px; }
     input[type="color"] { width: 32px; height: 32px; border: none; border-radius: 4px; cursor: pointer; }
@@ -60,12 +65,12 @@
     .btn-primary { background-color: #3498db; color: white; }
     .btn-success { background-color: #2ecc71; color: white; }
     .btn-secondary { background-color: #95a5a6; color: white; }
+    .btn-danger { background-color: #e74c3c; color: white; }
     .btn-sm { padding: 4px 8px; font-size: 0.8rem; }
     .hidden { display: none !important; }
 
     .footer-preview { margin-top: 10px; padding-top: 8px; border-top: 1px dashed #ccc; font-size: 0.8rem; color: #666; }
 
-    /* 時間割用テーブルデザイン */
     .tt-table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 0.9rem; }
     .tt-table th, .tt-table td { border: 1px solid #bbb; padding: 6px; text-align: center; }
     .tt-table th { background: #eef2f5; }
@@ -128,7 +133,7 @@
             </div>
             <div class="action-buttons">
               <button id="save-version-btn" class="btn btn-success btn-sm">保存してDiscordへ反映</button>
-              <button class="btn btn-secondary btn-sm cancel-version-btn">キャンセル</button>
+              <button class="btn btn-secondary btn-sm cancel-version-btn">前へ</button>
             </div>
           </div>
         </div>
@@ -170,7 +175,7 @@
             </div>
             <div class="action-buttons">
               <button id="save-terms-btn" class="btn btn-success btn-sm">保存してDiscordへ送信</button>
-              <button class="btn btn-secondary btn-sm cancel-terms-btn">キャンセル</button>
+              <button class="btn btn-secondary btn-sm cancel-terms-btn">前へ</button>
             </div>
           </div>
         </div>
@@ -192,28 +197,28 @@
           <div class="card-header"><h2>シード設定：ステップ1 (情報入力)</h2></div>
           <div class="form-group">
             <label>授業数（必須）</label>
-            <div id="seed-periods-options">
-              <label><input type="radio" name="seed-periods" value="1"> １時間</label><br>
-              <label><input type="radio" name="seed-periods" value="2"> ２時間</label><br>
-              <label><input type="radio" name="seed-periods" value="3"> ３時間</label><br>
-              <label><input type="radio" name="seed-periods" value="4"> ４時間</label><br>
-              <label><input type="radio" name="seed-periods" value="5" checked> ５時間</label><br>
-              <label><input type="radio" name="seed-periods" value="6"> ６時間</label><br>
-              <label><input type="radio" name="seed-periods" value="7"> ７時間</label><br>
+            <div id="seed-periods-options" class="radio-group">
+              <label><input type="radio" name="seed-periods" value="1"> １時間</label>
+              <label><input type="radio" name="seed-periods" value="2"> ２時間</label>
+              <label><input type="radio" name="seed-periods" value="3"> ３時間</label>
+              <label><input type="radio" name="seed-periods" value="4"> ４時間</label>
+              <label><input type="radio" name="seed-periods" value="5" checked> ５時間</label>
+              <label><input type="radio" name="seed-periods" value="6"> ６時間</label>
+              <label><input type="radio" name="seed-periods" value="7"> ７時間</label>
               <label><input type="radio" name="seed-periods" value="8"> ８時間</label>
             </div>
           </div>
           <div class="form-group">
             <label>登録する日</label>
-            <div id="seed-date-options">
-              <label><input type="radio" name="seed-date" value="0" checked> <span id="label-date-0">今日</span></label><br>
-              <label><input type="radio" name="seed-date" value="1"> <span id="label-date-1">明日</span></label><br>
+            <div id="seed-date-options" class="radio-group">
+              <label><input type="radio" name="seed-date" value="0" checked> <span id="label-date-0">今日</span></label>
+              <label><input type="radio" name="seed-date" value="1"> <span id="label-date-1">明日</span></label>
               <label><input type="radio" name="seed-date" value="2"> <span id="label-date-2">明後日</span></label>
             </div>
           </div>
           <div class="action-buttons">
             <button id="seed-step1-next" class="btn btn-primary">次へ</button>
-            <button class="btn btn-secondary back-to-tt-home">戻る</button>
+            <button class="btn btn-secondary back-to-tt-home">前へ</button>
           </div>
         </div>
       </div>
@@ -229,6 +234,9 @@
                 </thead>
                 <tbody id="seed-tbody"></tbody>
               </table>
+              <div style="margin-top: 5px;">
+                <button id="seed-reset-btn" class="btn btn-danger btn-sm">リセット</button>
+              </div>
             </div>
             <div style="width: 180px; display: flex; flex-direction: column; gap: 6px;">
               <label style="font-weight:bold; font-size:0.85rem;">テンプレ読込</label>
@@ -254,15 +262,15 @@
         <div class="card">
           <div class="card-header"><h2>時間割送信：いつの時間割を送信するか</h2></div>
           <div class="form-group">
-            <div id="send-date-options">
-              <label><input type="radio" name="send-date" value="0"> <span id="send-label-date-0">今日</span></label><br>
-              <label><input type="radio" name="send-date" value="1"> <span id="send-label-date-1">明日</span></label><br>
+            <div id="send-date-options" class="radio-group">
+              <label><input type="radio" name="send-date" value="0"> <span id="send-label-date-0">今日</span></label>
+              <label><input type="radio" name="send-date" value="1"> <span id="send-label-date-1">明日</span></label>
               <label><input type="radio" name="send-date" value="2"> <span id="send-label-date-2">明後日</span></label>
             </div>
           </div>
           <div class="action-buttons">
             <button id="send-step1-next" class="btn btn-primary">進む</button>
-            <button class="btn btn-secondary back-to-tt-home">戻る</button>
+            <button class="btn btn-secondary back-to-tt-home">前へ</button>
           </div>
         </div>
       </div>
@@ -272,15 +280,15 @@
           <div class="card-header"><h2>時間割送信：詳細・変更設定</h2></div>
           <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
             <div style="width: 200px; background: #fafafa; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
-              <div class="form-group">
-                <label style="font-size:0.8rem;">鍵残留状況</label>
-                <label style="font-size:0.8rem;"><input type="checkbox" name="key-status" value="1-1"> 1-1</label><br>
-                <label style="font-size:0.8rem;"><input type="checkbox" name="key-status" value="1-2"> 1-2</label><br>
-                <label style="font-size:0.8rem;"><input type="checkbox" name="key-status" value="1-3"> 1-3</label><br>
+              <div class="form-group radio-group">
+                <label style="font-size:0.8rem; font-weight:bold;">鍵残留状況</label>
+                <label style="font-size:0.8rem;"><input type="checkbox" name="key-status" value="1-1"> 1-1</label>
+                <label style="font-size:0.8rem;"><input type="checkbox" name="key-status" value="1-2"> 1-2</label>
+                <label style="font-size:0.8rem;"><input type="checkbox" name="key-status" value="1-3"> 1-3</label>
                 <label style="font-size:0.8rem;"><input type="checkbox" name="key-status" value="1-4"> 1-4</label>
               </div>
-              <div class="form-group">
-                <label style="font-size:0.8rem;">カット選択</label>
+              <div class="form-group radio-group">
+                <label style="font-size:0.8rem; font-weight:bold;">カット選択</label>
                 <div id="cut-checkboxes-container" style="font-size:0.8rem;">シード科目から自動生成されます</div>
               </div>
             </div>
@@ -339,7 +347,7 @@
           </div>
           <div class="action-buttons">
             <button id="tmpl-save-btn" class="btn btn-success">テンプレートを保存</button>
-            <button class="btn btn-secondary back-to-tt-home">戻る</button>
+            <button class="btn btn-secondary back-to-tt-home">前へ</button>
           </div>
         </div>
       </div>
@@ -359,7 +367,6 @@
       templates: {}
     };
 
-    // 一時入力保持用
     let seedFormState = { periods: 5, dateOffset: 0, grid: [], remark: "" };
     let sendFormState = { dateOffset: 0, customGrid: {}, editedCells: {}, cuts: [], keys: [], remark: "" };
     let tmplFormState = { day: 'mon', grid: [] };
@@ -381,7 +388,6 @@
     const sectionSendConfirm = document.getElementById('section-send-confirm');
     const sectionTemplateEditor = document.getElementById('section-template-editor');
 
-    // サーバーからデータを取得
     async function fetchSettings() {
       try {
         const res = await fetch(`${RENDER_API_URL}/api/get-settings`);
@@ -402,7 +408,6 @@
       setupDateLabels();
     }
 
-    // 日付ラベルの設定 (今日、明日、明後日)
     function setupDateLabels() {
       const now = new Date();
       for (let i = 0; i < 3; i++) {
@@ -434,7 +439,6 @@
     fetchSettings();
     hamburgerBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
 
-    // タブ切り替え管理
     function switchSection(targetSec) {
       [sectionVersion, sectionTerms, sectionTimetable, sectionSeedForm, sectionSeedGrid, sectionSendForm, sectionSendEditor, sectionSendConfirm, sectionTemplateEditor].forEach(s => s.classList.add('hidden'));
       [menuVersion, menuTerms, menuTimetable].forEach(m => m.classList.remove('active'));
@@ -452,7 +456,6 @@
       });
     });
 
-    // 編集モード・テキスト装飾 (利用規約・バージョン)
     const editVersionBtn = document.getElementById('edit-version-btn');
     const editTermsBtn = document.getElementById('edit-terms-btn');
     const versionView = document.getElementById('version-view');
@@ -500,22 +503,6 @@
     document.querySelector('.cancel-terms-btn').addEventListener('click', exitEditMode);
     termsColorInput.addEventListener('input', (e) => colorCodeText.innerText = e.target.value);
 
-    document.getElementById('btn-bold').addEventListener('click', () => { document.execCommand('bold', false, null); editor.focus(); });
-    document.getElementById('btn-italic').addEventListener('click', () => { document.execCommand('italic', false, null); editor.focus(); });
-    document.getElementById('btn-underline').addEventListener('click', () => { document.execCommand('underline', false, null); editor.focus(); });
-    document.getElementById('btn-strike').addEventListener('click', () => { document.execCommand('strikeThrough', false, null); editor.focus(); });
-    document.getElementById('btn-spoiler').addEventListener('click', () => {
-      const sel = window.getSelection();
-      if (!sel.rangeCount || sel.isCollapsed) return;
-      const range = sel.getRangeAt(0);
-      const span = document.createElement("span");
-      span.className = "spoiler";
-      span.appendChild(range.extractContents());
-      range.insertNode(span);
-      editor.focus();
-    });
-
-    // 保存ボタン (バージョン)
     document.getElementById('save-version-btn').addEventListener('click', async () => {
       const maj = vMajor.value.trim();
       const min = vMinor.value.trim();
@@ -535,7 +522,6 @@
       }
     });
 
-    // 保存ボタン (利用規約 - 指定IDのメッセージ編集)
     document.getElementById('save-terms-btn').addEventListener('click', async () => {
       const newTitle = termsTitleInput.value;
       const newColor = termsColorInput.value;
@@ -555,10 +541,7 @@
       }
     });
 
-
-    /* ==========================================
-       時間割：シード設定関連のロジック
-       ========================================== */
+    /* --- シード設定関連 --- */
     document.getElementById('goto-seed-btn').addEventListener('click', () => switchSection(sectionSeedForm));
 
     document.getElementById('seed-step1-next').addEventListener('click', () => {
@@ -569,7 +552,6 @@
       seedFormState.periods = parseInt(pRadio.value);
       seedFormState.dateOffset = parseInt(dRadio.value);
 
-      // 空のグリッドを作成
       seedFormState.grid = [];
       for (let r = 0; r < seedFormState.periods; r++) {
         seedFormState.grid.push(["", "", "", ""]);
@@ -596,7 +578,7 @@
           let td = document.createElement('td');
           let input = document.createElement('input');
           input.type = "text";
-          input.maxLength = 5; // 入力は自由に受け付け、保存時に1文字制限
+          input.maxLength = 5;
           input.value = seedFormState.grid[r][c] || "";
           input.addEventListener('input', (e) => {
             seedFormState.grid[r][c] = e.target.value;
@@ -608,7 +590,16 @@
       }
     }
 
-    // テンプレ読込ボタン
+    // リセットボタン機能
+    document.getElementById('seed-reset-btn').addEventListener('click', () => {
+      for (let r = 0; r < seedFormState.periods; r++) {
+        for (let c = 0; c < 4; c++) {
+          seedFormState.grid[r][c] = "";
+        }
+      }
+      buildSeedTable();
+    });
+
     document.querySelectorAll('.apply-tmpl').forEach(btn => {
       btn.addEventListener('click', (e) => {
         let dayKey = e.target.getAttribute('data-day');
@@ -631,7 +622,6 @@
     document.getElementById('seed-step2-prev').addEventListener('click', () => switchSection(sectionSeedForm));
 
     document.getElementById('seed-register-btn').addEventListener('click', async () => {
-      // 全部埋まっているかチェック
       for (let r = 0; r < seedFormState.periods; r++) {
         for (let c = 0; c < 4; c++) {
           if (!seedFormState.grid[r][c] || seedFormState.grid[r][c].trim() === "") {
@@ -643,10 +633,9 @@
 
       seedFormState.remark = document.getElementById('seed-remark-input').value;
 
-      // 日付キー文字列の作成
       let targetDate = new Date();
       targetDate.setDate(targetDate.getDate() + seedFormState.dateOffset);
-      let dateKey = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      let dateKey = targetDate.toISOString().split('T')[0];
 
       const res = await fetch(`${RENDER_API_URL}/api/save-seed`, {
         method: 'POST',
@@ -670,12 +659,8 @@
       }
     });
 
-
-    /* ==========================================
-       時間割：送信・変更関連のロジック
-       ========================================== */
+    /* --- 時間割送信関連 --- */
     document.getElementById('goto-send-btn').addEventListener('click', () => {
-      // シード未登録の日付を灰色にする
       const now = new Date();
       for (let i = 0; i < 3; i++) {
         let d = new Date(now);
@@ -720,10 +705,8 @@
     });
 
     function buildSendEditor() {
-      // 鍵残留状況のチェックボックスリセット
       document.querySelectorAll('input[name="key-status"]').forEach(ch => ch.checked = false);
 
-      // カット用チェックボックスをシード科目から自動生成 (重複除外)
       let uniqueSubjects = new Set();
       let seedGrid = sendFormState.seedData.grid;
       seedGrid.forEach(row => row.forEach(val => { if (val) uniqueSubjects.add(val); }));
@@ -742,7 +725,6 @@
         cutContainer.appendChild(label);
       });
 
-      // テーブルの構築
       const tbody = document.getElementById('send-tbody');
       tbody.innerHTML = "";
       const periods = sendFormState.seedData.periods;
@@ -758,16 +740,14 @@
           let td = document.createElement('td');
           let seedVal = seedGrid[r][c] || "";
 
-          // 仕様：前の文字は灰色として表に書かれており、セルを選択すると黄色/淡赤になり入力可能になる
           let input = document.createElement('input');
           input.type = "text";
-          input.value = seedVal; // 初期はシードの文字が入っている
-          td.classList.add('gray-mode'); // 灰色表示
+          input.value = seedVal;
+          td.classList.add('gray-mode');
 
           input.addEventListener('focus', () => {
             td.classList.remove('gray-mode');
             td.classList.add('editable');
-            // 黄色/淡赤状態にするためにインプット値をクリア、または編集可能にする
             if (input.value === seedVal && !sendFormState.customGrid[`${r}-${c}`]) {
               input.value = "";
             }
@@ -789,7 +769,7 @@
             if (!input.value) {
               td.classList.add('gray-mode');
               td.classList.remove('editable');
-              input.value = seedVal; // 戻す
+              input.value = seedVal;
             }
           });
 
@@ -803,7 +783,6 @@
     document.getElementById('send-step2-prev').addEventListener('click', () => switchSection(sectionSendForm));
 
     document.getElementById('send-step2-next').addEventListener('click', () => {
-      // 各種設定の収集
       sendFormState.keys = [];
       document.querySelectorAll('input[name="key-status"]:checked').forEach(ch => sendFormState.keys.push(ch.value));
 
@@ -812,7 +791,6 @@
 
       sendFormState.remark = document.getElementById('send-remark-input').value;
 
-      // プレビューの構築
       buildPreview();
       switchSection(sectionSendConfirm);
     });
@@ -821,17 +799,49 @@
       let seedGrid = sendFormState.seedData.grid;
       let periods = sendFormState.seedData.periods;
       let rNumMap = ["１", "２", "３", "４", "５", "６", "７", "８"];
-      let lines = ["｜＼｜①｜②｜③｜④｜"];
+      
+      let allRows = [];
+      let allEdited = [];
+      for (let r = 0; r < periods; r++) {
+        let rowArr = [];
+        let rowEd = [];
+        for (let c = 0; c < 4; c++) {
+          let val = seedGrid[r][c];
+          let isEdited = false;
+          if (sendFormState.customGrid[r] && sendFormState.customGrid[r][c] !== undefined && sendFormState.customGrid[r][c] !== "") {
+            val = sendFormState.customGrid[r][c];
+            isEdited = true;
+          }
+          if (sendFormState.editedCells[`${r}-${c}`]) isEdited = true;
+          rowArr.push(val);
+          rowEd.push(isEdited);
+        }
+        allRows.push(rowArr);
+        allEdited.push(rowEd);
+      }
 
+      let filteredRows = [];
+      let filteredEd = [];
+      for (let i = 0; i < allRows.length; i++) {
+        let row = allRows[i];
+        let hasCut = sendFormState.cuts.some(cutWord => row.includes(cutWord));
+        if (!hasCut) {
+          filteredRows.push(row);
+          filteredEd.push(allEdited[i]);
+        }
+      }
+      while (filteredRows.length < periods) {
+        filteredRows.push(["／", "／", "／", "／"]);
+        filteredEd.push([false, false, false, false]);
+      }
+
+      let lines = ["｜＼｜①｜②｜③｜④｜"];
       for (let r = 0; r < periods; r++) {
         let lineStr = `｜${rNumMap[r]}｜`;
         for (let c = 0; c < 4; c++) {
-          let val = seedGrid[r][c];
-          if (sendFormState.customGrid[r] && sendFormState.customGrid[r][c] !== undefined && sendFormState.customGrid[r][c] !== "") {
-            val = sendFormState.customGrid[r][c];
-          }
-          let isEdited = sendFormState.editedCells[`${r}-${c}`];
-          if (isEdited) {
+          let val = filteredRows[r][c];
+          let isEdited = filteredEd[r][c];
+          if (isEdited && val !== "／" && val !== "") {
             lineStr += `**${val}**｜`;
           } else {
             lineStr += `${val}｜`;
@@ -841,9 +851,9 @@
       }
 
       let desc = lines.join("\n");
-      if (sendFormState.remark) desc += `\n\n備考：${sendFormState.remark}`;
+      if (sendFormState.remark && sendFormState.remark.trim() !== "") desc += `\n${sendFormState.remark}`;
       let keyStr = sendFormState.keys.length > 0 ? sendFormState.keys.join(",") : "なし";
-      desc += `\n\n鍵残留状況：${keyStr}`;
+      desc += `\n鍵残留状況：${keyStr}`;
       let cutStr = sendFormState.cuts.length > 0 ? sendFormState.cuts.join(",") + "カット" : "カットなし";
       desc += `\n${cutStr}`;
 
@@ -877,10 +887,7 @@
       }
     });
 
-
-    /* ==========================================
-       時間割：テンプレート編集関連のロジック
-       ========================================== */
+    /* --- テンプレート編集関連 --- */
     document.getElementById('goto-template-btn').addEventListener('click', () => {
       tmplFormState.day = 'mon';
       document.getElementById('tmpl-day-select').value = 'mon';
@@ -897,9 +904,8 @@
       const tbody = document.getElementById('tmpl-tbody');
       tbody.innerHTML = "";
       const tmplGrid = appState.templates[tmplFormState.day] || [];
-      const rNumMap = ["１", "２", "３", "４", "５", "６", "７", "8"];
+      const rNumMap = ["１", "２", "３", "４", "５", "６", "７", "８"];
 
-      // テンプレはデフォルト最大7時間行で表示
       for (let r = 0; r < 7; r++) {
         let tr = document.createElement('tr');
         let th = document.createElement('th');
