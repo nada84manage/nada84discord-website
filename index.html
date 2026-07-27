@@ -35,7 +35,6 @@
     .form-group { margin-bottom: 12px; }
     .form-group label { display: block; font-weight: bold; margin-bottom: 4px; font-size: 0.85rem; }
     
-    /* ラジオボタン間の感覚を調整 */
     .radio-group label { display: block; margin-bottom: 8px; font-size: 0.9rem; cursor: pointer; }
     .radio-group input[type="radio"] { margin-right: 6px; }
 
@@ -132,7 +131,7 @@
               </div>
             </div>
             <div class="action-buttons">
-              <button id="save-version-btn" class="btn btn-success btn-sm">保存してDiscordへ反映</button>
+              <button id="save-version-btn" class="btn btn-success btn-sm">更新</button>
               <button class="btn btn-secondary btn-sm cancel-version-btn">前へ</button>
             </div>
           </div>
@@ -174,7 +173,7 @@
               <div id="editor" class="editor-area" contenteditable="true"></div>
             </div>
             <div class="action-buttons">
-              <button id="save-terms-btn" class="btn btn-success btn-sm">保存してDiscordへ送信</button>
+              <button id="save-terms-btn" class="btn btn-success btn-sm">更新</button>
               <button class="btn btn-secondary btn-sm cancel-terms-btn">前へ</button>
             </div>
           </div>
@@ -269,7 +268,7 @@
             </div>
           </div>
           <div class="action-buttons">
-            <button id="send-step1-next" class="btn btn-primary">進む</button>
+            <button id="send-step1-next" class="btn btn-primary">次へ</button>
             <button class="btn btn-secondary back-to-tt-home">前へ</button>
           </div>
         </div>
@@ -307,7 +306,7 @@
           </div>
           <div class="action-buttons">
             <button id="send-step2-prev" class="btn btn-secondary">前へ</button>
-            <button id="send-step2-next" class="btn btn-primary">次へ (確認画面)</button>
+            <button id="send-step2-next" class="btn btn-primary">次へ</button>
           </div>
         </div>
       </div>
@@ -346,7 +345,7 @@
             </table>
           </div>
           <div class="action-buttons">
-            <button id="tmpl-save-btn" class="btn btn-success">テンプレートを保存</button>
+            <button id="tmpl-save-btn" class="btn btn-success">更新</button>
             <button class="btn btn-secondary back-to-tt-home">前へ</button>
           </div>
         </div>
@@ -590,7 +589,6 @@
       }
     }
 
-    // リセットボタン機能
     document.getElementById('seed-reset-btn').addEventListener('click', () => {
       for (let r = 0; r < seedFormState.periods; r++) {
         for (let c = 0; c < 4; c++) {
@@ -860,7 +858,7 @@
       let dObj = new Date(sendFormState.dateKey);
       let title = `84回生 ${dObj.getMonth()+1}/${dObj.getDate()}の時間割`;
 
-      document.getElementById('send-preview-box').innerText = `<@1525664322783678544>\n\n【Embedプレビュー】\nタイトル: ${title}\n\n${desc}`;
+      document.getElementById('send-preview-box').innerText = `<@&1525664322783678544>\n\n【Embedプレビュー】\nタイトル: ${title}\n\n${desc}`;
     }
 
     document.getElementById('send-confirm-prev').addEventListener('click', () => switchSection(sectionSendEditor));
