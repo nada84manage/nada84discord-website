@@ -131,8 +131,8 @@
               </div>
             </div>
             <div class="action-buttons">
-              <button id="save-version-btn" class="btn btn-success btn-sm">更新</button>
               <button class="btn btn-secondary btn-sm cancel-version-btn">前へ</button>
+              <button id="save-version-btn" class="btn btn-success btn-sm">更新</button>
             </div>
           </div>
         </div>
@@ -173,8 +173,8 @@
               <div id="editor" class="editor-area" contenteditable="true"></div>
             </div>
             <div class="action-buttons">
-              <button id="save-terms-btn" class="btn btn-success btn-sm">更新</button>
               <button class="btn btn-secondary btn-sm cancel-terms-btn">前へ</button>
+              <button id="save-terms-btn" class="btn btn-success btn-sm">更新</button>
             </div>
           </div>
         </div>
@@ -216,8 +216,8 @@
             </div>
           </div>
           <div class="action-buttons">
-            <button id="seed-step1-next" class="btn btn-primary">次へ</button>
             <button class="btn btn-secondary back-to-tt-home">前へ</button>
+            <button id="seed-step1-next" class="btn btn-primary">次へ</button>
           </div>
         </div>
       </div>
@@ -268,8 +268,8 @@
             </div>
           </div>
           <div class="action-buttons">
-            <button id="send-step1-next" class="btn btn-primary">次へ</button>
             <button class="btn btn-secondary back-to-tt-home">前へ</button>
+            <button id="send-step1-next" class="btn btn-primary">次へ</button>
           </div>
         </div>
       </div>
@@ -345,8 +345,8 @@
             </table>
           </div>
           <div class="action-buttons">
-            <button id="tmpl-save-btn" class="btn btn-success">更新</button>
             <button class="btn btn-secondary back-to-tt-home">前へ</button>
+            <button id="tmpl-save-btn" class="btn btn-success">更新</button>
           </div>
         </div>
       </div>
@@ -900,6 +900,7 @@
 
     function buildTemplateTable() {
       const tbody = document.getElementById('tmpl-tbody');
+      tbody.md = "";
       tbody.innerHTML = "";
       const tmplGrid = appState.templates[tmplFormState.day] || [];
       const rNumMap = ["１", "２", "３", "４", "５", "６", "７", "８"];
