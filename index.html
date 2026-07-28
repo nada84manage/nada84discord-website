@@ -61,6 +61,7 @@
         <li><a href="#" data-target="section-timetable">時間割送信・編集</a></li>
         <li><a href="#" data-target="section-reservations">予約送信リスト</a></li>
         <li><a href="#" data-target="section-templates">テンプレート設定</a></li>
+        <li><a href="#" data-target="section-edit-msg">過去のメッセージ編集</a></li>
       </ul>
     </nav>
 
@@ -132,7 +133,7 @@
 
       <section id="section-reservations" class="section">
         <h1>予約送信リスト (時刻順)</h1>
-        <p style="margin-bottom: 15px; font-size: 0.9rem; color: #666;">現在登録されている予約送信の一覧です。日時順にソートされています。</p>
+        <p style="margin-bottom: 15px; font-size: 0.9rem; color: #666;">現在登録されている予約送信の一覧です。日付・時刻順にソートされています。</p>
         <div id="reservation-list-container">
           </div>
       </section>
@@ -158,11 +159,18 @@
         <button id="tmpl-save-btn">テンプレートを保存</button>
       </section>
 
+      <section id="section-edit-msg" class="section">
+        <h1>過去の時間割メッセージ編集</h1>
+        <p style="margin-bottom: 15px; font-size: 0.9rem; color: #666;">今日・昨日に送信された時間割メッセージを取得して直接修正できます。</p>
+        <button id="fetch-recent-msg-btn" style="margin-bottom: 15px;">メッセージ一覧を取得</button>
+        <div id="recent-messages-container"></div>
+      </section>
+
     </div>
   </div>
 
   <script>
-    const API_BASE = ""; // 同一サーバーでホストする場合は空文字またはRenderのURL
+    const API_BASE = "";
 
     // タブ切り替え
     document.querySelectorAll('.sidebar a').forEach(link => {
@@ -184,7 +192,6 @@
         const res = await fetch(`${API_BASE}/api/get-settings`);
         appData = await res.json();
         
-        // 規約設定反映
         document.getElementById('version-input').value = appData.version || "";
         document.getElementById('terms-title-input').value = appData.title || "";
         document.getElementById('terms-color-input').value = appData.color || "#3498db";
@@ -266,7 +273,6 @@
       });
       const data = await res.json();
       if(data.success) {
-        // バージョンも同時に更新
         await fetch(`${API_BASE}/api/update-version`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -298,18 +304,16 @@
       const cuts = document.getElementById('tt-cuts').value.split(',').map(s=>s.trim()).filter(Boolean);
       const keys = document.getElementById('tt-keys').value.split(',').map(s=>s.trim()).filter(Boolean);
 
-      // 先にシード保存
       await fetch(`${API_BASE}/api/save-seed`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ dateKey, periods, grid: customGrid, remark })
       });
 
-      // 送信実行
       const res = await fetch(`${API_BASE}/api/send-timetable`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dateKey, customGrid, cuts, keys })
+        body: JSON.stringify({ dateKey, customGrid, cuts, keys, periods })
       });
       const data = await res.json();
       if(data.success) {
@@ -337,12 +341,12 @@
 
       const cuts = document.getElementById('tt-cuts').value.split(',').map(s=>s.trim()).filter(Boolean);
       const keys = document.getElementById('tt-keys').value.split(',').map(s=>s.trim()).filter(Boolean);
-      const scheduledTime = new Date(dateKey + "T00:00:00").toISOString();
+      const scheduledTime = new Date(dateKey + "T08:00:00").toISOString();
 
       const res = await fetch(`${API_BASE}/api/add-reservation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dateKey, scheduledTime, customGrid, cuts, keys })
+        body: JSON.stringify({ dateKey, scheduledTime, customGrid, cuts, keys, periods })
       });
       const data = await res.json();
       if(data.success) {
@@ -353,7 +357,7 @@
       }
     });
 
-    // 予約リスト読み込み・表示
+    // 予約リスト読み込み・表示（時刻順・日付付き）
     async function loadReservations() {
       const container = document.getElementById('reservation-list-container');
       container.innerHTML = "読み込み中...";
@@ -434,6 +438,60 @@
         alert('保存に失敗しました。');
       }
     });
+
+    // 過去メッセージ編集機能
+    document.getElementById('fetch-recent-msg-btn').addEventListener('click', async () => {
+      const container = document.getElementById('recent-messages-container');
+      container.innerHTML = "取得中...";
+      try {
+        const res = await fetch(`${API_BASE}/api/get-recent-messages`);
+        const data = await res.json();
+        const messages = data.messages || [];
+
+        if(messages.length === 0) {
+          container.innerHTML = "<p>編集可能なメッセージが見つかりませんでした。</p>";
+          return;
+        }
+
+        container.innerHTML = "";
+        messages.forEach(msg => {
+          const div = document.createElement('div');
+          div.style.cssText = "border:1px solid #ddd; padding:15px; border-radius:6px; margin-bottom:15px; background:#fdfefe;";
+          div.innerHTML = `
+            <p style="font-size:0.85rem; color:#666; margin-bottom:8px;">送信時刻: ${new Date(msg.timestamp).toLocaleString()}</p>
+            <div class="form-group">
+              <label>タイトル</label>
+              <input type="text" id="title-${msg.id}" value="${msg.embed.title || ''}">
+            </div>
+            <div class="form-group">
+              <label>内容</label>
+              <textarea id="content-${msg.id}" style="height:150px;">${msg.embed.description || ''}</textarea>
+            </div>
+            <button onclick="updateMessage('${msg.id}')">この内容でDiscord上のメッセージを更新</button>
+          `;
+          container.appendChild(div);
+        });
+      } catch(e) {
+        container.innerHTML = "<p>メッセージの取得に失敗しました。</p>";
+      }
+    });
+
+    async function updateMessage(messageId) {
+      const newTitle = document.getElementById(`title-${messageId}`).value;
+      const newContent = document.getElementById(`content-${messageId}`).value;
+
+      const res = await fetch(`${API_BASE}/api/edit-timetable-message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId, newTitle, newContent })
+      });
+      const data = await res.json();
+      if(data.success) {
+        alert('Discord上のメッセージを更新しました！');
+      } else {
+        alert('更新に失敗しました。');
+      }
+    }
 
     fetchSettings();
   </script>
