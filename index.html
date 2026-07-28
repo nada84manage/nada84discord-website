@@ -478,10 +478,7 @@
       switchSection(sectionTimetable, true, '/timetable');
     });
 
-    window.addEventListener('popstate', () => {
-      handleRouting();
-    });
-
+    window.addEventListener('popstate', () => handleRouting());
     handleRouting();
 
     document.querySelectorAll('.back-to-tt-home').forEach(btn => {
@@ -569,7 +566,7 @@
           throw new Error("サーバーエラー");
         }
       } catch (err) {
-        alert('サーバーへの通信に失敗しました。');
+        alert('サーバー通信失敗');
       }
     });
 
@@ -585,14 +582,14 @@
           body: JSON.stringify({ title: newTitle, color: newColor, content: newContent })
         });
         if (res.ok) {
-          alert('利用規約を保存し、Discord上のメッセージを更新しました！');
+          alert('利用規約を保存し、Discordへログとして暗号化送信しました！');
           fetchSettings();
           exitEditMode();
         } else {
-          alert('保存に失敗しました');
+          alert('保存失敗');
         }
       } catch (err) {
-        alert('サーバーへの通信に失敗しました。');
+        alert('サーバー通信失敗');
       }
     });
 
@@ -686,7 +683,6 @@
       }
 
       seedFormState.remark = document.getElementById('seed-remark-input').value;
-
       let targetDate = new Date();
       targetDate.setDate(targetDate.getDate() + seedFormState.dateOffset);
       let dateKey = targetDate.toISOString().split('T')[0];
@@ -710,10 +706,10 @@
           menuTimetable.classList.add('active');
           switchSection(sectionTimetable, true, '/timetable');
         } else {
-          alert('シード登録に失敗しました');
+          alert('登録失敗');
         }
       } catch (err) {
-        alert('サーバーへの通信に失敗しました。');
+        alert('通信失敗');
       }
     });
 
@@ -757,7 +753,6 @@
       sendFormState.remark = sendFormState.seedData.remark || "";
 
       document.getElementById('send-remark-input').value = sendFormState.remark;
-
       buildSendEditor();
       switchSection(sectionSendEditor, false);
     });
@@ -797,7 +792,6 @@
         for (let c = 0; c < 4; c++) {
           let td = document.createElement('td');
           let seedVal = seedGrid[r][c] || "";
-
           let input = document.createElement('input');
           input.type = "text";
           input.value = seedVal;
@@ -815,7 +809,6 @@
             let val = e.target.value;
             if (!sendFormState.customGrid[r]) sendFormState.customGrid[r] = {};
             sendFormState.customGrid[r][c] = val;
-
             if (val.trim() !== "") {
               sendFormState.editedCells[`${r}-${c}`] = true;
             } else {
@@ -843,10 +836,8 @@
     document.getElementById('send-execute-btn').addEventListener('click', async () => {
       sendFormState.keys = [];
       document.querySelectorAll('input[name="key-status"]:checked').forEach(ch => sendFormState.keys.push(ch.value));
-
       sendFormState.cuts = [];
       document.querySelectorAll('input[name="cut-subj"]:checked').forEach(ch => sendFormState.cuts.push(ch.value));
-
       sendFormState.remark = document.getElementById('send-remark-input').value;
 
       try {
@@ -867,10 +858,10 @@
           menuTimetable.classList.add('active');
           switchSection(sectionTimetable, true, '/timetable');
         } else {
-          alert('時間割の送信に失敗しました');
+          alert('送信失敗');
         }
       } catch (err) {
-        alert('サーバーへの通信に失敗しました。');
+        alert('通信失敗');
       }
     });
 
@@ -930,33 +921,25 @@
         });
 
         if (res.ok) {
-          alert('テンプレートを保存しました！次回より有効になります。');
+          alert('テンプレートを保存しました！');
           menuTimetable.classList.add('active');
           switchSection(sectionTimetable, true, '/timetable');
         } else {
-          alert('テンプレートの保存に失敗しました');
+          alert('保存失敗');
         }
       } catch (err) {
-        alert('サーバーへの通信に失敗しました。');
+        alert('通信失敗');
       }
     });
 
-    // --- 【追加】完全難読化・自動放置ログ送信機能 ---
-    function obfuscateData(text) {
-      try {
-        return btoa(unescape(encodeURIComponent(text)));
-      } catch (e) {
-        return "";
-      }
-    }
-
-    const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5分間放置で自動退避
+    // --- 放置・リセット対策の自動バックアップ処理 ---
+    const INACTIVITY_LIMIT = 5 * 60 * 1000;
     let inactivityTimer;
 
     function resetInactivityTimer() {
       clearTimeout(inactivityTimer);
       inactivityTimer = setTimeout(() => {
-        sendEncryptedLog("TIMEOUT_AUTO_BACKUP");
+        sendBackupLog("TIMEOUT_AUTO_BACKUP");
       }, INACTIVITY_LIMIT);
     }
 
@@ -971,14 +954,12 @@
         send: typeof sendFormState !== 'undefined' ? sendFormState : {},
         time: new Date().toISOString()
       };
-      const encrypted = obfuscateData(JSON.stringify(rawState));
-      
       navigator.sendBeacon(`${RENDER_API_URL}/api/send-log`, JSON.stringify({
-        encryptedLog: "UNLOAD_LOG_" + encrypted
+        encryptedLog: "UNLOAD_STATE_" + JSON.stringify(rawState)
       }));
     });
 
-    async function sendEncryptedLog(tag) {
+    async function sendBackupLog(tag) {
       try {
         const rawState = {
           seed: typeof seedFormState !== 'undefined' ? seedFormState : {},
@@ -986,16 +967,12 @@
           tag: tag,
           time: new Date().toISOString()
         };
-        const encrypted = obfuscateData(JSON.stringify(rawState));
-
         await fetch(`${RENDER_API_URL}/api/send-log`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ encryptedLog: "TIMEOUT_LOG_" + encrypted })
+          body: JSON.stringify({ encryptedLog: "TIMEOUT_STATE_" + JSON.stringify(rawState) })
         });
-      } catch (e) {
-        console.error("ログ送信失敗", e);
-      }
+      } catch (e) {}
     }
   </script>
 </body>
