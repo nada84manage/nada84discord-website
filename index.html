@@ -61,7 +61,7 @@
     .markdown-body .spoiler.revealed { background-color: #b9bbbe; color: #2e3136; }
     .markdown-body { line-height: 1.5; white-space: pre-wrap; font-size: 0.9rem; }
 
-    .action-buttons { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .action-buttons { margin-top: 10px; display: flex; gap: 8px; }
     .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.85rem; }
     .btn-primary { background-color: #3498db; color: white; }
     .btn-success { background-color: #2ecc71; color: white; }
@@ -81,10 +81,6 @@
     .tt-table td.gray-mode { color: #888; background: #f9f9f9; }
 
     .disabled-option { color: #aaa; cursor: not-allowed; }
-
-    .reservation-card { background: #fdfefe; border: 1px solid #e1e8ed; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-    .reservation-info h4 { font-size: 0.95rem; color: #2c3e50; margin-bottom: 3px; }
-    .reservation-info p { font-size: 0.82rem; color: #7f8c8d; }
 
     @media (max-width: 768px) {
       .hamburger { display: block; }
@@ -195,8 +191,6 @@
             <button id="goto-seed-btn" class="btn btn-primary">シードを設定</button>
             <button id="goto-send-btn" class="btn btn-success">時間割送信</button>
             <button id="goto-template-btn" class="btn btn-secondary">テンプレの編集</button>
-            <button id="goto-reservation-btn" class="btn btn-primary" style="background-color: #8e44ad;">予約送信リスト</button>
-            <button id="goto-editmsg-btn" class="btn btn-secondary" style="background-color: #d35400;">過去メッセージ編集</button>
           </div>
         </div>
       </div>
@@ -263,7 +257,6 @@
           <div class="action-buttons">
             <button id="seed-step2-prev" class="btn btn-secondary">前へ</button>
             <button id="seed-register-btn" class="btn btn-success">登録</button>
-            <button id="seed-reserve-btn" class="btn btn-primary" style="background-color: #27ae60;">予約送信登録</button>
           </div>
         </div>
       </div>
@@ -350,39 +343,17 @@
         </div>
       </div>
 
-      <div id="section-reservation-list" class="hidden">
-        <div class="card">
-          <div class="card-header"><h2>予約送信リスト (日付・時刻順)</h2></div>
-          <p style="margin-bottom: 12px; font-size: 0.85rem; color: #666;">現在登録されている予約送信の一覧です。</p>
-          <div id="reservation-list-container">読み込み中...</div>
-          <div class="action-buttons" style="margin-top: 15px;">
-            <button class="btn btn-secondary back-to-tt-home">前へ</button>
-          </div>
-        </div>
-      </div>
-
-      <div id="section-edit-msg" class="hidden">
-        <div class="card">
-          <div class="card-header"><h2>過去の時間割メッセージ編集</h2></div>
-          <p style="margin-bottom: 12px; font-size: 0.85rem; color: #666;">送信済みのメッセージを取得して修正できます。</p>
-          <button id="fetch-recent-msg-btn" class="btn btn-primary btn-sm" style="margin-bottom: 15px;">メッセージ一覧を取得</button>
-          <div id="recent-messages-container"></div>
-          <div class="action-buttons" style="margin-top: 15px;">
-            <button class="btn btn-secondary back-to-tt-home">前へ</button>
-          </div>
-        </div>
-      </div>
-
     </main>
   </div>
 
   <script>
-    const RENDER_API_URL = ""; // 同一ホストの場合は空でOK、必要に応じて指定
+    // 確実にRenderサーバーのURLを向くように設定（空文字の場合は現在のURLを使用）
+    const RENDER_API_URL = "https://nada84group.onrender.com";
 
     let appState = {
       version: "2.07.00",
-      title: "",
-      content: "",
+      title: "読み込み中...",
+      content: "読み込み中...",
       color: "#3498db",
       seeds: {},
       templates: {}
@@ -407,14 +378,15 @@
     const sectionSendForm = document.getElementById('section-send-form');
     const sectionSendEditor = document.getElementById('section-send-editor');
     const sectionTemplateEditor = document.getElementById('section-template-editor');
-    const sectionReservationList = document.getElementById('section-reservation-list');
-    const sectionEditMsg = document.getElementById('section-edit-msg');
 
     async function fetchSettings() {
       const badge = document.getElementById('bot-status-badge');
       const statusText = document.getElementById('bot-status-text');
       try {
-        const res = await fetch(`${RENDER_API_URL}/api/get-settings`);
+        const res = await fetch(`${RENDER_API_URL}/api/get-settings`, {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' }
+        });
         if (!res.ok) throw new Error("取得失敗");
         appState = await res.json();
         renderView();
@@ -425,15 +397,19 @@
         console.error(err);
         badge.className = "status-badge offline";
         statusText.innerText = "オフライン（サーバー接続エラー）";
+        // エラー時でも「読み込み中」のままフリーズさせないためのフォールバック
+        appState.title = "データ取得エラー";
+        appState.content = "サーバーからのデータ取得に失敗しました。ページを再読み込みするか、URLを確認してください。";
+        renderView();
       }
     }
 
     function renderView() {
       document.getElementById('terms-title-display').innerText = appState.title || "";
-      document.getElementById('terms-title-display').style.display = appState.title.trim() ? "block" : "none";
+      document.getElementById('terms-title-display').style.display = (appState.title && appState.title.trim()) ? "block" : "none";
       document.getElementById('terms-text-display').innerHTML = markdownToHtml(appState.content);
-      document.getElementById('version-display').innerText = appState.version;
-      document.getElementById('footer-preview-display').innerText = `N84ボット v${appState.version}`;
+      document.getElementById('version-display').innerText = appState.version || "2.07.00";
+      document.getElementById('footer-preview-display').innerText = `N84ボット v${appState.version || "2.07.00"}`;
       setupDateLabels();
     }
 
@@ -469,7 +445,7 @@
     hamburgerBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
 
     function switchSection(targetSec, updateHistory = true, path = "") {
-      [sectionVersion, sectionTerms, sectionTimetable, sectionSeedForm, sectionSeedGrid, sectionSendForm, sectionSendEditor, sectionTemplateEditor, sectionReservationList, sectionEditMsg].forEach(s => s.classList.add('hidden'));
+      [sectionVersion, sectionTerms, sectionTimetable, sectionSeedForm, sectionSeedGrid, sectionSendForm, sectionSendEditor, sectionTemplateEditor].forEach(s => s.classList.add('hidden'));
       [menuVersion, menuTerms, menuTimetable].forEach(m => m.classList.remove('active'));
       targetSec.classList.remove('hidden');
 
@@ -510,7 +486,10 @@
       switchSection(sectionTimetable, true, '/timetable');
     });
 
-    window.addEventListener('popstate', handleRouting);
+    window.addEventListener('popstate', () => {
+      handleRouting();
+    });
+
     handleRouting();
 
     document.querySelectorAll('.back-to-tt-home').forEach(btn => {
@@ -746,39 +725,6 @@
       }
     });
 
-    // シード画面からの予約送信登録
-    document.getElementById('seed-reserve-btn').addEventListener('click', async () => {
-      seedFormState.remark = document.getElementById('seed-remark-input').value;
-      let targetDate = new Date();
-      targetDate.setDate(targetDate.getDate() + seedFormState.dateOffset);
-      let dateKey = targetDate.toISOString().split('T')[0];
-      let scheduledTime = new Date(dateKey + "T08:00:00").toISOString();
-
-      try {
-        const res = await fetch(`${RENDER_API_URL}/api/add-reservation`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            dateKey,
-            scheduledTime,
-            customGrid: seedFormState.grid,
-            cuts: [],
-            keys: [],
-            periods: seedFormState.periods
-          })
-        });
-        const data = await res.json();
-        if(data.success) {
-          alert('予約送信リストに登録しました！');
-          document.getElementById('goto-reservation-btn').click();
-        } else {
-          alert('登録に失敗しました。');
-        }
-      } catch(e) {
-        alert('サーバーへの通信に失敗しました。');
-      }
-    });
-
     /* --- 時間割送信関連 --- */
     document.getElementById('goto-send-btn').addEventListener('click', () => {
       const now = new Date();
@@ -1002,133 +948,6 @@
         alert('サーバーへの通信に失敗しました。');
       }
     });
-
-    /* --- 予約送信リスト関連 --- */
-    document.getElementById('goto-reservation-btn').addEventListener('click', () => {
-      switchSection(sectionReservationList, false);
-      loadReservations();
-    });
-
-    async function loadReservations() {
-      const container = document.getElementById('reservation-list-container');
-      container.innerHTML = "読み込み中...";
-      try {
-        const res = await fetch(`${RENDER_API_URL}/api/get-reservations`);
-        const data = await res.json();
-        const list = data.reservations || [];
-
-        if(list.length === 0) {
-          container.innerHTML = "<p>現在登録されている予約はありません。</p>";
-          return;
-        }
-
-        container.innerHTML = "";
-        list.forEach(item => {
-          const d = new Date(item.scheduledTime);
-          const dateStr = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} (${['日','月','火','水','木','金','土'][d.getDay()]})`;
-          const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-
-          const card = document.createElement('div');
-          card.className = 'reservation-card';
-          card.innerHTML = `
-            <div class="reservation-info">
-              <h4>📅 対象日付: ${item.dateKey}</h4>
-              <p>⏰ 予約日時: ${dateStr} ${timeStr}</p>
-              <p>カット: ${item.cuts && item.cuts.length ? item.cuts.join(',') : 'なし'} | 鍵残留: ${item.keys && item.keys.length ? item.keys.join(',') : 'なし'}</p>
-            </div>
-            <div>
-              <button class="btn btn-danger btn-sm" onclick="deleteReservation('${item.id}')">削除</button>
-            </div>
-          `;
-          container.appendChild(card);
-        });
-      } catch(e) {
-        container.innerHTML = "<p>予約リストの取得に失敗しました。</p>";
-      }
-    }
-
-    async function deleteReservation(id) {
-      if(!confirm('この予約を削除しますか？')) return;
-      try {
-        const res = await fetch(`${RENDER_API_URL}/api/delete-reservation`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id })
-        });
-        const data = await res.json();
-        if(data.success) {
-          loadReservations();
-        } else {
-          alert('削除に失敗しました。');
-        }
-      } catch(e) {
-        alert('サーバーへの通信に失敗しました。');
-      }
-    }
-
-    /* --- 過去メッセージ編集関連 --- */
-    document.getElementById('goto-editmsg-btn').addEventListener('click', () => {
-      switchSection(sectionEditMsg, false);
-      document.getElementById('recent-messages-container').innerHTML = "";
-    });
-
-    document.getElementById('fetch-recent-msg-btn').addEventListener('click', async () => {
-      const container = document.getElementById('recent-messages-container');
-      container.innerHTML = "取得中...";
-      try {
-        const res = await fetch(`${RENDER_API_URL}/api/get-recent-messages`);
-        const data = await res.json();
-        const messages = data.messages || [];
-
-        if(messages.length === 0) {
-          container.innerHTML = "<p>編集可能なメッセージが見つかりませんでした。</p>";
-          return;
-        }
-
-        container.innerHTML = "";
-        messages.forEach(msg => {
-          const div = document.createElement('div');
-          div.className = 'card';
-          div.style.marginBottom = "10px";
-          div.innerHTML = `
-            <p style="font-size:0.8rem; color:#666; margin-bottom:6px;">送信時刻: ${new Date(msg.timestamp).toLocaleString()}</p>
-            <div class="form-group">
-              <label>タイトル</label>
-              <input type="text" id="title-${msg.id}" value="${msg.embed.title || ''}">
-            </div>
-            <div class="form-group">
-              <label>内容</label>
-              <textarea id="content-${msg.id}" style="height:120px;">${msg.embed.description || ''}</textarea>
-            </div>
-            <button class="btn btn-success btn-sm" onclick="updateMessage('${msg.id}')">Discord上のメッセージを更新</button>
-          `;
-          container.appendChild(div);
-        });
-      } catch(e) {
-        container.innerHTML = "<p>メッセージの取得に失敗しました。</p>";
-      }
-    });
-
-    async function updateMessage(messageId) {
-      const newTitle = document.getElementById(`title-${messageId}`).value;
-      const newContent = document.getElementById(`content-${messageId}`).value;
-
-      try {
-        const res = await fetch(`${RENDER_API_URL}/api/edit-timetable-message`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messageId, newTitle, newContent })
-        });
-        const data = await res.json();
-        if(data.success) {
-          alert('Discord上のメッセージを更新しました！');
-        } else {
-          alert('更新に失敗しました。');
-        }
-      } catch(e) {
-        alert('サーバーへの通信に失敗しました。');
-      }
-    }
   </script>
 </body>
 </html>
