@@ -54,7 +54,6 @@
 
     .toolbar { display: flex; gap: 4px; margin-bottom: 4px; background: #eef2f5; padding: 4px; border-radius: 4px 4px 0 0; border: 1px solid #ccc; border-bottom: none; }
     .toolbar button { padding: 4px 8px; border: 1px solid #aaa; background: #fff; border-radius: 3px; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
-    .toolbar button.active { background-color: #3498db; color: white; }
 
     .editor-area { width: 100%; min-height: 150px; padding: 8px; font-size: 0.9rem; border: 1px solid #ccc; border-radius: 0 0 4px 4px; background: #fff; line-height: 1.5; white-space: pre-wrap; outline: none; }
     .markdown-body .spoiler { background-color: #4f545c; color: transparent; border-radius: 3px; padding: 0 3px; cursor: pointer; }
@@ -76,9 +75,10 @@
     .tt-table th, .tt-table td { border: 1px solid #bbb; padding: 6px; text-align: center; }
     .tt-table th { background: #eef2f5; }
     .tt-table input { width: 40px; text-align: center; border: none; background: transparent; font-size: 0.9rem; outline: none; }
-    .tt-table td.editable { background: #fff9f9; }
-    .tt-table td.editable input { background: #ffe6e6; color: #c0392b; font-weight: bold; }
-    .tt-table td.gray-mode { color: #888; background: #f9f9f9; }
+    
+    /* 要件2：変更前の文字を薄型化（グレー＆薄め） */
+    .tt-table td.gray-mode input { color: #999; opacity: 0.45; background: #fdfdfd; }
+    .tt-table td.editable input { background: #ffe6e6; color: #c0392b; font-weight: bold; opacity: 1; }
 
     .disabled-option { color: #aaa; cursor: not-allowed; }
 
@@ -166,12 +166,10 @@
               </div>
             </div>
             <div class="form-group">
-              <label>規約本文（必須）</label>
+              <label>規約本文（必須） - # / ## / ### 見出しが使えます</label>
               <div class="toolbar">
                 <button type="button" id="btn-bold"><b>B</b></button>
                 <button type="button" id="btn-italic"><i>I</i></button>
-                <button type="button" id="btn-underline"><u>U</u></button>
-                <button type="button" id="btn-strike"><s>S</s></button>
                 <button type="button" id="btn-spoiler">|| ネタバレ ||</button>
               </div>
               <div id="editor" class="editor-area" contenteditable="true"></div>
@@ -191,6 +189,8 @@
             <button id="goto-seed-btn" class="btn btn-primary">シードを設定</button>
             <button id="goto-send-btn" class="btn btn-success">時間割送信</button>
             <button id="goto-template-btn" class="btn btn-secondary">テンプレの編集</button>
+            <button id="goto-edit-msg-btn" class="btn btn-primary" style="background-color: #8e44ad;">時間割を編集</button>
+            <button id="goto-reservation-btn" class="btn btn-primary" style="background-color: #d35400;">送信予約</button>
           </div>
         </div>
       </div>
@@ -343,6 +343,54 @@
         </div>
       </div>
 
+      <div id="section-edit-message" class="hidden">
+        <div class="card">
+          <div class="card-header"><h2>送信済み時間割の編集（今日・昨日）</h2></div>
+          <div id="recent-messages-container" style="margin-bottom: 15px;">
+            <p style="font-size: 0.9rem; color: #666;">読み込み中...</p>
+          </div>
+          <div id="message-edit-form" class="hidden" style="border-top: 1px solid #eee; padding-top: 15px;">
+            <h3 style="font-size: 0.95rem; margin-bottom: 8px;">メッセージの編集</h3>
+            <div class="form-group">
+              <label>タイトル</label>
+              <input type="text" id="edit-msg-title">
+            </div>
+            <div class="form-group">
+              <label>本文（Markdown / テーブル形式）</label>
+              <textarea id="edit-msg-content" rows="10"></textarea>
+            </div>
+            <div class="action-buttons">
+              <button id="cancel-edit-msg-btn" class="btn btn-secondary">キャンセル</button>
+              <button id="save-edit-msg-btn" class="btn btn-success">Discordへ反映して保存</button>
+            </div>
+          </div>
+          <div class="action-buttons" style="margin-top: 15px;">
+            <button class="btn btn-secondary back-to-tt-home">前へ</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="section-reservation" class="hidden">
+        <div class="card">
+          <div class="card-header"><h2>送信予約管理（当日 0:00:00 基準）</h2></div>
+          <div class="form-group">
+            <label>予約する日付</label>
+            <input type="date" id="res-date-input" style="max-width: 200px;">
+          </div>
+          <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">※登録された予約は、当日の 0:00:00 に自動処理されます。明日以降の日付を選んだ場合は即時送信の確認が行われます。</p>
+          <div class="action-buttons">
+            <button class="btn btn-secondary back-to-tt-home">前へ</button>
+            <button id="add-res-btn" class="btn btn-primary">この内容で予約を登録</button>
+          </div>
+          <div style="margin-top: 20px;">
+            <h3 style="font-size: 0.95rem; margin-bottom: 8px;">現在の予約一覧</h3>
+            <div id="reservation-list-container">
+              <p style="font-size: 0.85rem; color: #666;">予約はありません。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 
@@ -355,12 +403,14 @@
       content: "",
       color: "#3498db",
       seeds: {},
-      templates: {}
+      templates: {},
+      reservations: []
     };
 
     let seedFormState = { periods: 5, dateOffset: 0, grid: [], remark: "" };
-    let sendFormState = { dateOffset: 0, customGrid: {}, editedCells: {}, cuts: [], keys: [], remark: "" };
+    let sendFormState = { dateOffset: 0, dateKey: "", customGrid: {}, editedCells: [], cuts: [], keys: [], remark: "" };
     let tmplFormState = { day: 'mon', grid: [] };
+    let editingMessageId = null;
 
     const hamburgerBtn = document.getElementById('hamburger-btn');
     const sidebar = document.getElementById('sidebar');
@@ -377,6 +427,8 @@
     const sectionSendForm = document.getElementById('section-send-form');
     const sectionSendEditor = document.getElementById('section-send-editor');
     const sectionTemplateEditor = document.getElementById('section-template-editor');
+    const sectionEditMessage = document.getElementById('section-edit-message');
+    const sectionReservation = document.getElementById('section-reservation');
 
     async function fetchSettings() {
       const badge = document.getElementById('bot-status-badge');
@@ -421,14 +473,18 @@
       }
     }
 
+    // 要件1：# / ## / ### 見出しサイズ変更の完全対応
     function markdownToHtml(text) {
       if (!text) return "";
       return text
         .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/^#\s+(.+)$/gm, '<h1 style="font-size:1.4rem; font-weight:bold; margin:10px 0;">$1</h1>')
+        .replace(/^##\s+(.+)$/gm, '<h2 style="font-size:1.2rem; font-weight:bold; margin:8px 0;">$1</h2>')
+        .replace(/^###\s+(.+)$/gm, '<h3 style="font-size:1.05rem; font-weight:bold; margin:6px 0;">$1</h3>')
         .replace(/\|\|(.*?)\|\|/g, '<span class="spoiler" onclick="this.classList.add(\'revealed\')">$1</span>')
         .replace(/__(.*?)__/g, '<u>$1</u>')
         .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-        .replace(/~~(.*?)~~/g, '<s>$1<s>')
+        .replace(/~~(.*?)~~/g, '<s>$1</s>')
         .replace(/\*(.*?)\*/g, '<i>$1</i>')
         .replace(/\n/g, '<br>');
     }
@@ -437,7 +493,7 @@
     hamburgerBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
 
     function switchSection(targetSec, updateHistory = true, path = "") {
-      [sectionVersion, sectionTerms, sectionTimetable, sectionSeedForm, sectionSeedGrid, sectionSendForm, sectionSendEditor, sectionTemplateEditor].forEach(s => s.classList.add('hidden'));
+      [sectionVersion, sectionTerms, sectionTimetable, sectionSeedForm, sectionSeedGrid, sectionSendForm, sectionSendEditor, sectionTemplateEditor, sectionEditMessage, sectionReservation].forEach(s => s.classList.add('hidden'));
       [menuVersion, menuTerms, menuTimetable].forEach(m => m.classList.remove('active'));
       targetSec.classList.remove('hidden');
 
@@ -527,7 +583,7 @@
       termsTitleInput.value = appState.title;
       termsColorInput.value = appState.color;
       colorCodeText.innerText = appState.color;
-      editor.innerHTML = markdownToHtml(appState.content);
+      editor.innerHTML = appState.content; // 編集時は生のマークダウンテキストを表示
       termsView.classList.add('hidden');
       termsEdit.classList.remove('hidden');
     });
@@ -563,10 +619,10 @@
           await fetchSettings();
           exitEditMode();
         } else {
-          throw new Error("サーバーエラー");
+          throw new Error();
         }
       } catch (err) {
-        alert('サーバー通信失敗');
+        alert('サーバーへの通信に失敗しました。');
       }
     });
 
@@ -582,14 +638,28 @@
           body: JSON.stringify({ title: newTitle, color: newColor, content: newContent })
         });
         if (res.ok) {
-          alert('利用規約を保存し、Discordへログとして暗号化送信しました！');
+          alert('利用規約を保存し、Discord上のメッセージを更新しました！');
           fetchSettings();
           exitEditMode();
         } else {
-          alert('保存失敗');
+          alert('保存に失敗しました');
         }
       } catch (err) {
-        alert('サーバー通信失敗');
+        alert('サーバーへの通信に失敗しました。');
+      }
+    });
+
+    // ツールバーボタン（太字・斜体）
+    document.getElementById('btn-bold').addEventListener('click', () => {
+      document.execCommand('bold', false, null);
+    });
+    document.getElementById('btn-italic').addEventListener('click', () => {
+      document.execCommand('italic', false, null);
+    });
+    document.getElementById('btn-spoiler').addEventListener('click', () => {
+      const sel = window.getSelection();
+      if (sel.toString()) {
+        document.execCommand('insertText', false, `||${sel.toString()}||`);
       }
     });
 
@@ -604,12 +674,24 @@
       seedFormState.periods = parseInt(pRadio.value);
       seedFormState.dateOffset = parseInt(dRadio.value);
 
-      seedFormState.grid = [];
-      for (let r = 0; r < seedFormState.periods; r++) {
-        seedFormState.grid.push(["", "", "", ""]);
+      let targetDate = new Date();
+      targetDate.setDate(targetDate.getDate() + seedFormState.dateOffset);
+      let dateKey = targetDate.toISOString().split('T')[0];
+
+      // 既に登録済みデータがある場合は既存データをロードして初期表示する
+      if (appState.seeds && appState.seeds[dateKey]) {
+        seedFormState.grid = JSON.parse(JSON.stringify(appState.seeds[dateKey].grid));
+        seedFormState.periods = appState.seeds[dateKey].periods;
+        seedFormState.remark = appState.seeds[dateKey].remark || "";
+        document.getElementById('seed-remark-input').value = seedFormState.remark;
+      } else {
+        seedFormState.grid = [];
+        for (let r = 0; r < seedFormState.periods; r++) {
+          seedFormState.grid.push(["", "", "", ""]);
+        }
+        seedFormState.remark = "";
+        document.getElementById('seed-remark-input').value = "";
       }
-      seedFormState.remark = "";
-      document.getElementById('seed-remark-input').value = "";
 
       buildSeedTable();
       switchSection(sectionSeedGrid, false);
@@ -672,6 +754,7 @@
 
     document.getElementById('seed-step2-prev').addEventListener('click', () => switchSection(sectionSeedForm, false));
 
+    // 要件3：シード設定 2回目以降の上書き確認ポップアップ
     document.getElementById('seed-register-btn').addEventListener('click', async () => {
       for (let r = 0; r < seedFormState.periods; r++) {
         for (let c = 0; c < 4; c++) {
@@ -683,9 +766,16 @@
       }
 
       seedFormState.remark = document.getElementById('seed-remark-input').value;
+
       let targetDate = new Date();
       targetDate.setDate(targetDate.getDate() + seedFormState.dateOffset);
       let dateKey = targetDate.toISOString().split('T')[0];
+
+      if (appState.seeds && appState.seeds[dateKey]) {
+        if (!confirm("既にこの日付のシードが登録されています。上書きしますか？")) {
+          return;
+        }
+      }
 
       try {
         const res = await fetch(`${RENDER_API_URL}/api/save-seed`, {
@@ -706,10 +796,10 @@
           menuTimetable.classList.add('active');
           switchSection(sectionTimetable, true, '/timetable');
         } else {
-          alert('登録失敗');
+          alert('シード登録に失敗しました');
         }
       } catch (err) {
-        alert('通信失敗');
+        alert('サーバーへの通信に失敗しました。');
       }
     });
 
@@ -753,6 +843,7 @@
       sendFormState.remark = sendFormState.seedData.remark || "";
 
       document.getElementById('send-remark-input').value = sendFormState.remark;
+
       buildSendEditor();
       switchSection(sectionSendEditor, false);
     });
@@ -792,10 +883,11 @@
         for (let c = 0; c < 4; c++) {
           let td = document.createElement('td');
           let seedVal = seedGrid[r][c] || "";
+
           let input = document.createElement('input');
           input.type = "text";
           input.value = seedVal;
-          td.classList.add('gray-mode');
+          td.classList.add('gray-mode'); // 要件2：初期状態で薄く表示
 
           input.addEventListener('focus', () => {
             td.classList.remove('gray-mode');
@@ -809,6 +901,7 @@
             let val = e.target.value;
             if (!sendFormState.customGrid[r]) sendFormState.customGrid[r] = {};
             sendFormState.customGrid[r][c] = val;
+
             if (val.trim() !== "") {
               sendFormState.editedCells[`${r}-${c}`] = true;
             } else {
@@ -836,8 +929,10 @@
     document.getElementById('send-execute-btn').addEventListener('click', async () => {
       sendFormState.keys = [];
       document.querySelectorAll('input[name="key-status"]:checked').forEach(ch => sendFormState.keys.push(ch.value));
+
       sendFormState.cuts = [];
       document.querySelectorAll('input[name="cut-subj"]:checked').forEach(ch => sendFormState.cuts.push(ch.value));
+
       sendFormState.remark = document.getElementById('send-remark-input').value;
 
       try {
@@ -858,10 +953,10 @@
           menuTimetable.classList.add('active');
           switchSection(sectionTimetable, true, '/timetable');
         } else {
-          alert('送信失敗');
+          alert('時間割の送信に失敗しました');
         }
       } catch (err) {
-        alert('通信失敗');
+        alert('サーバーへの通信に失敗しました。');
       }
     });
 
@@ -921,59 +1016,187 @@
         });
 
         if (res.ok) {
-          alert('テンプレートを保存しました！');
+          alert('テンプレートを保存しました！次回より有効になります。');
           menuTimetable.classList.add('active');
           switchSection(sectionTimetable, true, '/timetable');
         } else {
-          alert('保存失敗');
+          alert('テンプレートの保存に失敗しました');
         }
       } catch (err) {
-        alert('通信失敗');
+        alert('サーバーへの通信に失敗しました。');
       }
     });
 
-    // --- 放置・リセット対策の自動バックアップ処理 ---
-    const INACTIVITY_LIMIT = 5 * 60 * 1000;
-    let inactivityTimer;
+    /* --- 要件4：「時間割を編集」機能 --- */
+    document.getElementById('goto-edit-msg-btn').addEventListener('click', async () => {
+      switchSection(sectionEditMessage, false);
+      const container = document.getElementById('recent-messages-container');
+      container.innerHTML = '<p style="font-size: 0.9rem; color: #666;">読み込み中...</p>';
+      document.getElementById('message-edit-form').classList.add('hidden');
 
-    function resetInactivityTimer() {
-      clearTimeout(inactivityTimer);
-      inactivityTimer = setTimeout(() => {
-        sendBackupLog("TIMEOUT_AUTO_BACKUP");
-      }, INACTIVITY_LIMIT);
-    }
-
-    ['mousemove', 'keydown', 'click', 'input'].forEach(event => {
-      window.addEventListener(event, resetInactivityTimer);
-    });
-    resetInactivityTimer();
-
-    window.addEventListener('beforeunload', () => {
-      const rawState = {
-        seed: typeof seedFormState !== 'undefined' ? seedFormState : {},
-        send: typeof sendFormState !== 'undefined' ? sendFormState : {},
-        time: new Date().toISOString()
-      };
-      navigator.sendBeacon(`${RENDER_API_URL}/api/send-log`, JSON.stringify({
-        encryptedLog: "UNLOAD_STATE_" + JSON.stringify(rawState)
-      }));
-    });
-
-    async function sendBackupLog(tag) {
       try {
-        const rawState = {
-          seed: typeof seedFormState !== 'undefined' ? seedFormState : {},
-          send: typeof sendFormState !== 'undefined' ? sendFormState : {},
-          tag: tag,
-          time: new Date().toISOString()
-        };
-        await fetch(`${RENDER_API_URL}/api/send-log`, {
+        const res = await fetch(`${RENDER_API_URL}/api/get-recent-messages`);
+        const data = await res.json();
+
+        if (!data.messages || data.messages.length === 0) {
+          container.innerHTML = '<p style="font-size: 0.9rem; color: #666;">今日・昨日の送信済みメッセージは見つかりませんでした。</p>';
+          return;
+        }
+
+        let html = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+        data.messages.forEach(msg => {
+          const title = msg.embed.title || "（タイトルなし）";
+          const dateStr = new Date(msg.timestamp).toLocaleString();
+          html += `
+            <div style="background: #fafafa; border: 1px solid #ddd; padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+              <div>
+                <strong>${title}</strong><br>
+                <small style="color: #666;">送信時刻: ${dateStr}</small>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="openEditMessageModal('${msg.id}', ${JSON.stringify(msg.embed.title || '').replace(/"/g, '&quot;')}, ${JSON.stringify(msg.embed.description || '').replace(/"/g, '&quot;')})">編集する</button>
+            </div>
+          `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+      } catch (e) {
+        container.innerHTML = '<p style="font-size: 0.9rem; color: #c0392b;">メッセージの取得に失敗しました。</p>';
+      }
+    });
+
+    window.openEditMessageModal = function(id, title, desc) {
+      editingMessageId = id;
+      document.getElementById('edit-msg-title').value = title;
+      document.getElementById('edit-msg-content').value = desc;
+      document.getElementById('message-edit-form').classList.remove('hidden');
+    };
+
+    document.getElementById('cancel-edit-msg-btn').addEventListener('click', () => {
+      document.getElementById('message-edit-form').classList.add('hidden');
+      editingMessageId = null;
+    });
+
+    document.getElementById('save-edit-msg-btn').addEventListener('click', async () => {
+      if (!editingMessageId) return;
+      const newTitle = document.getElementById('edit-msg-title').value;
+      const newContent = document.getElementById('edit-msg-content').value;
+
+      try {
+        const res = await fetch(`${RENDER_API_URL}/api/edit-timetable-message`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ encryptedLog: "TIMEOUT_STATE_" + JSON.stringify(rawState) })
+          body: JSON.stringify({ messageId: editingMessageId, newTitle, newContent })
         });
-      } catch (e) {}
+        if (res.ok) {
+          alert('Discord上のメッセージを更新しました！');
+          document.getElementById('message-edit-form').classList.add('hidden');
+          document.getElementById('goto-edit-msg-btn').click(); // リスト再読み込み
+        } else {
+          alert('更新に失敗しました');
+        }
+      } catch (e) {
+        alert('サーバー通信エラー');
+      }
+    });
+
+    /* --- 要件5：「送信予約」機能（当日0:00:00基準 ＆ 明日以降即時選択対応） --- */
+    document.getElementById('goto-reservation-btn').addEventListener('click', () => {
+      switchSection(sectionReservation, false);
+      renderReservationList();
+    });
+
+    document.getElementById('add-res-btn').addEventListener('click', async () => {
+      const dateVal = document.getElementById('res-date-input').value;
+      if (!dateVal) { alert('日付を選択してください'); return; }
+
+      // すべて当日 0:00:00 基準
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const selectedDate = new Date(dateVal);
+      selectedDate.setHours(0, 0, 0, 0);
+
+      let sendImmediately = false;
+      if (selectedDate > today) {
+        sendImmediately = confirm("明日以降の日付です。今すぐ送信しますか？\n（キャンセルすると、選択した日の 0:00:00 に予約配信されます）");
+      }
+
+      if (sendImmediately) {
+        // 即時送信の場合
+        try {
+          const res = await fetch(`${RENDER_API_URL}/api/send-timetable`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dateKey: dateVal, customGrid: {}, cuts: [], keys: [] })
+          });
+          if (res.ok) {
+            alert('今すぐ送信を実行しました！');
+            menuTimetable.classList.add('active');
+            switchSection(sectionTimetable, true, '/timetable');
+          } else {
+            alert('送信に失敗しました');
+          }
+        } catch (e) {
+          alert('サーバー通信エラー');
+        }
+      } else {
+        // 予約登録の場合
+        try {
+          const res = await fetch(`${RENDER_API_URL}/api/add-reservation`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dateKey: dateVal, customGrid: {}, cuts: [], keys: [], sendImmediately: false })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            appState.reservations = data.reservations;
+            alert('指定日の 0:00:00 基準で予約を登録しました！');
+            renderReservationList();
+          } else {
+            alert('予約登録に失敗しました');
+          }
+        } catch (e) {
+          alert('サーバー通信エラー');
+        }
+      }
+    });
+
+    function renderReservationList() {
+      const container = document.getElementById('reservation-list-container');
+      if (!appState.reservations || appState.reservations.length === 0) {
+        container.innerHTML = '<p style="font-size: 0.85rem; color: #666;">予約はありません。</p>';
+        return;
+      }
+
+      let html = '<div style="display: flex; flex-direction: column; gap: 6px;">';
+      appState.reservations.forEach(r => {
+        html += `
+          <div style="background: #fafafa; border: 1px solid #ddd; padding: 8px 12px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.9rem;">対象日: <strong>${r.dateKey}</strong> (基準時刻: ${new Date(r.scheduledTime).toLocaleString()})</span>
+            <button class="btn btn-danger btn-sm" onclick="deleteReservation('${r.id}')">削除</button>
+          </div>
+        `;
+      });
+      html += '</div>';
+      container.innerHTML = html;
     }
+
+    window.deleteReservation = async function(id) {
+      if (!confirm('この予約を削除しますか？')) return;
+      try {
+        const res = await fetch(`${RENDER_API_URL}/api/delete-reservation`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          appState.reservations = data.reservations;
+          renderReservationList();
+        }
+      } catch (e) {
+        alert('削除エラー');
+      }
+    };
   </script>
 </body>
 </html>
