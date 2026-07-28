@@ -3,242 +3,670 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>灘校84回生＋α管理サイト</title>
+  <title>灘校84回生＋αグループ - 管理サイト</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
-    body { background-color: #f4f6f8; color: #333; display: flex; height: 100vh; overflow: hidden; }
+    body { background-color: #f4f6f8; color: #333; }
+    .admin-container { display: flex; min-height: 100vh; }
     
-    /* サイドバー (元のデザインに復元) */
     .sidebar {
       width: 220px;
       background-color: #2c3e50;
       color: #fff;
-      display: flex;
-      flex-direction: column;
-      padding-top: 20px;
+      padding: 15px;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      overflow-y: auto;
       flex-shrink: 0;
     }
-    .sidebar .brand {
-      font-size: 1.1rem;
-      font-weight: bold;
-      padding: 0 20px 20px 20px;
-      border-bottom: 1px solid #34495e;
-      margin-bottom: 10px;
-    }
-    .sidebar a {
-      color: #ecf0f1;
-      text-decoration: none;
-      padding: 12px 20px;
-      font-size: 0.95rem;
-      transition: background 0.2s;
-      display: block;
-    }
-    .sidebar a:hover, .sidebar a.active {
-      background-color: #34495e;
-    }
-
-    /* メインコンテンツ */
-    .main-content {
-      flex: 1;
-      padding: 30px;
-      overflow-y: auto;
-      background-color: #f4f6f8;
-    }
-    .section { display: none; background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; max-width: 900px; }
-    .section.active { display: block; }
+    .sidebar h2 { font-size: 1.1rem; margin-bottom: 15px; border-bottom: 1px solid #34495e; padding-bottom: 8px; }
+    .sidebar ul { list-style: none; }
+    .sidebar li a { color: #ecf0f1; text-decoration: none; display: block; padding: 8px 10px; border-radius: 4px; margin-bottom: 4px; font-size: 0.9rem; }
+    .sidebar li a.active, .sidebar li a:hover { background-color: #34495e; font-weight: bold; }
     
-    h1 { font-size: 1.3rem; margin-bottom: 20px; color: #2c3e50; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .hamburger { display: none; position: fixed; top: 10px; left: 10px; z-index: 1000; font-size: 20px; background: #2c3e50; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; }
+    .content { flex: 1; padding: 25px; min-width: 0; }
     
-    .form-group { margin-bottom: 15px; }
-    label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; color: #555; }
-    input[type="text"], input[type="date"], select, textarea {
-      width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.95rem;
+    .card { background: white; padding: 15px; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 15px; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+    .card-header h2 { font-size: 1.1rem; }
+
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-weight: bold; margin-bottom: 4px; font-size: 0.85rem; }
+    
+    .radio-group label { display: block; margin-bottom: 8px; font-size: 0.9rem; cursor: pointer; }
+    .radio-group input[type="radio"] { margin-right: 6px; }
+
+    input[type="text"], select, textarea { padding: 6px 10px; font-size: 0.85rem; border: 1px solid #ccc; border-radius: 4px; width: 100%; }
+    .color-picker-wrapper { display: flex; align-items: center; gap: 8px; }
+    input[type="color"] { width: 32px; height: 32px; border: none; border-radius: 4px; cursor: pointer; }
+
+    .bot-status-container { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+    .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 12px; font-weight: bold; font-size: 0.85rem; color: white; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: white; }
+    .status-badge.online { background-color: #2ecc71; }
+    .status-badge.offline { background-color: #e74c3c; }
+
+    .version-input-container { display: flex; align-items: center; font-size: 0.95rem; font-weight: bold; gap: 4px; white-space: nowrap; }
+    .version-part-first { width: 34px; text-align: center; padding: 4px 2px; font-size: 0.85rem; border: 1px solid #ccc; border-radius: 4px; }
+    .version-part { width: 44px; text-align: center; padding: 4px 2px; font-size: 0.85rem; border: 1px solid #ccc; border-radius: 4px; }
+
+    .toolbar { display: flex; gap: 4px; margin-bottom: 4px; background: #eef2f5; padding: 4px; border-radius: 4px 4px 0 0; border: 1px solid #ccc; border-bottom: none; }
+    .toolbar button { padding: 4px 8px; border: 1px solid #aaa; background: #fff; border-radius: 3px; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
+    .toolbar button.active { background-color: #3498db; color: white; }
+
+    .editor-area { width: 100%; min-height: 150px; padding: 8px; font-size: 0.9rem; border: 1px solid #ccc; border-radius: 0 0 4px 4px; background: #fff; line-height: 1.5; white-space: pre-wrap; outline: none; }
+    .markdown-body .spoiler { background-color: #4f545c; color: transparent; border-radius: 3px; padding: 0 3px; cursor: pointer; }
+    .markdown-body .spoiler.revealed { background-color: #b9bbbe; color: #2e3136; }
+    .markdown-body { line-height: 1.5; white-space: pre-wrap; font-size: 0.9rem; }
+
+    .action-buttons { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.85rem; }
+    .btn-primary { background-color: #3498db; color: white; }
+    .btn-success { background-color: #2ecc71; color: white; }
+    .btn-secondary { background-color: #95a5a6; color: white; }
+    .btn-danger { background-color: #e74c3c; color: white; }
+    .btn-sm { padding: 4px 8px; font-size: 0.8rem; }
+    .hidden { display: none !important; }
+
+    .footer-preview { margin-top: 10px; padding-top: 8px; border-top: 1px dashed #ccc; font-size: 0.8rem; color: #666; }
+
+    .tt-table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 0.9rem; }
+    .tt-table th, .tt-table td { border: 1px solid #bbb; padding: 6px; text-align: center; }
+    .tt-table th { background: #eef2f5; }
+    .tt-table input { width: 40px; text-align: center; border: none; background: transparent; font-size: 0.9rem; outline: none; }
+    .tt-table td.editable { background: #fff9f9; }
+    .tt-table td.editable input { background: #ffe6e6; color: #c0392b; font-weight: bold; }
+    .tt-table td.gray-mode { color: #888; background: #f9f9f9; }
+
+    .disabled-option { color: #aaa; cursor: not-allowed; }
+
+    .reservation-card { background: #fdfefe; border: 1px solid #e1e8ed; border-radius: 6px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .reservation-info h4 { font-size: 0.95rem; color: #2c3e50; margin-bottom: 3px; }
+    .reservation-info p { font-size: 0.82rem; color: #7f8c8d; }
+
+    @media (max-width: 768px) {
+      .hamburger { display: block; }
+      .sidebar { position: fixed; top: 0; left: 0; height: 100%; z-index: 999; transform: translateX(-100%); transition: transform 0.3s ease; }
+      .sidebar.open { transform: translateX(0); }
+      .content { padding: 50px 15px 15px 15px; }
     }
-    textarea { height: 120px; resize: vertical; }
-    
-    button { background-color: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 0.95rem; font-weight: bold; }
-    button:hover { background-color: #2980b9; }
-    button.danger { background-color: #e74c3c; }
-    button.danger:hover { background-color: #c0392b; }
-
-    table.matrix { border-collapse: collapse; margin-bottom: 15px; width: 100%; max-width: 400px; }
-    table.matrix th, table.matrix td { border: 1px solid #ddd; padding: 6px; text-align: center; }
-    table.matrix input { width: 40px; text-align: center; border: none; font-size: 1rem; }
-
-    .reservation-card { background: #fdfefe; border: 1px solid #e1e8ed; border-radius: 6px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-    .reservation-info h4 { font-size: 1rem; color: #2c3e50; margin-bottom: 4px; }
-    .reservation-info p { font-size: 0.85rem; color: #7f8c8d; }
   </style>
 </head>
 <body>
 
-  <nav class="sidebar">
-    <div class="brand">灘校84回生＋α</div>
-    <a href="#" data-target="section-terms" class="active">利用規約</a>
-    <a href="#" data-target="section-timetable">時間割</a>
-    <a href="#" data-target="section-reservations">予約送信リスト</a>
-    <a href="#" data-target="section-templates">テンプレート設定</a>
-    <a href="#" data-target="section-edit-msg">過去メッセージ編集</a>
-    <a href="#" data-target="section-bot-config">bot設定</a>
-  </nav>
+  <button class="hamburger" id="hamburger-btn">☰</button>
 
-  <div class="main-content">
+  <div class="admin-container">
+    <nav class="sidebar" id="sidebar">
+      <h2>灘校84回生＋α</h2>
+      <ul>
+        <li><a href="/version" id="menu-version">bot設定</a></li>
+        <li><a href="/terms" class="active" id="menu-terms">利用規約</a></li>
+        <li><a href="/timetable" id="menu-timetable">時間割</a></li>
+      </ul>
+    </nav>
 
-    <section id="section-terms" class="section active">
-      <h1>利用規約 <button id="save-terms-btn">保存して反映</button></h1>
-      <div class="form-group">
-        <label>バージョン</label>
-        <input type="text" id="version-input">
-      </div>
-      <div class="form-group">
-        <label>埋め込みタイトル</label>
-        <input type="text" id="terms-title-input">
-      </div>
-      <div class="form-group">
-        <label>カラーコード (HEX)</label>
-        <input type="text" id="terms-color-input">
-      </div>
-      <div class="form-group">
-        <label>利用規約 本文</label>
-        <textarea id="terms-content-input"></textarea>
-      </div>
-    </section>
+    <main class="content">
 
-    <section id="section-timetable" class="section">
-      <h1>時間割 送信・登録</h1>
-      <div class="form-group">
-        <label>対象日付</label>
-        <input type="date" id="tt-date">
-      </div>
-      <div class="form-group">
-        <label>時限数</label>
-        <select id="tt-periods">
-          <option value="4">4限</option>
-          <option value="5">5限</option>
-          <option value="6" selected>6限</option>
-          <option value="7">7限</option>
-          <option value="8">8限</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>時間割グリッド</label>
-        <table class="matrix" id="tt-matrix">
-          <thead>
-            <tr><th>＼</th><th>①</th><th>②</th><th>③</th><th>④</th></tr>
-          </thead>
-          <tbody id="tt-tbody"></tbody>
-        </table>
-      </div>
-      <div class="form-group">
-        <label>備考・連絡事項</label>
-        <input type="text" id="tt-remark" placeholder="例: 体育館集合など">
-      </div>
-      <div class="form-group">
-        <label>カット科目 (カンマ区切り)</label>
-        <input type="text" id="tt-cuts" placeholder="例: 数学,英語">
-      </div>
-      <div class="form-group">
-        <label>鍵残留状況 (カンマ区切り)</label>
-        <input type="text" id="tt-keys" placeholder="例: 1組,3組">
-      </div>
-      <div style="display: flex; gap: 10px;">
-        <button id="tt-send-now-btn">今すぐ送信</button>
-        <button id="tt-reserve-btn" style="background-color: #27ae60;">予約送信登録</button>
-      </div>
-    </section>
-
-    <section id="section-reservations" class="section">
-      <h1>予約送信リスト</h1>
-      <p style="margin-bottom: 15px; font-size: 0.9rem; color: #666;">登録されている予約送信の一覧です（日付・時刻順）。</p>
-      <div id="reservation-list-container">
+      <div id="section-version" class="hidden">
+        <div class="card">
+          <div class="card-header"><h2>botの状態</h2></div>
+          <div class="bot-status-container">
+            <div id="bot-status-badge" class="status-badge offline">
+              <span class="status-dot"></span><span id="bot-status-text">オフライン（接続確認中...）</span>
+            </div>
+          </div>
         </div>
-    </section>
-
-    <section id="section-templates" class="section">
-      <h1>曜日別テンプレート設定 <button id="tmpl-save-btn">保存</button></h1>
-      <div class="form-group">
-        <label>曜日選択</label>
-        <select id="tmpl-day-select">
-          <option value="mon">月曜日</option>
-          <option value="tue">火曜日</option>
-          <option value="wed">水曜日</option>
-          <option value="thu">木曜日</option>
-          <option value="fri">金曜日</option>
-        </select>
+        <div class="card">
+          <div class="card-header">
+            <h2>バージョン設定</h2>
+            <button id="edit-version-btn" class="btn btn-primary btn-sm">編集</button>
+          </div>
+          <div id="version-view">
+            <p style="font-size:0.9rem;">現在のボットバージョン: <strong id="version-display">読み込み中...</strong></p>
+          </div>
+          <div id="version-edit" class="hidden">
+            <div class="form-group">
+              <div class="version-input-container">
+                <span>N84ボット v</span>
+                <input type="text" id="v-major" class="version-part-first" maxlength="1" placeholder="2">
+                <span>.</span>
+                <input type="text" id="v-minor" class="version-part" maxlength="2" placeholder="00">
+                <span>.</span>
+                <input type="text" id="v-patch" class="version-part" maxlength="2" placeholder="00">
+              </div>
+            </div>
+            <div class="action-buttons">
+              <button class="btn btn-secondary btn-sm cancel-version-btn">前へ</button>
+              <button id="save-version-btn" class="btn btn-success btn-sm">更新</button>
+            </div>
+          </div>
+        </div>
       </div>
-      <table class="matrix" id="tmpl-matrix">
-        <thead>
-          <tr><th>＼</th><th>①</th><th>②</th><th>③</th><th>④</th></tr>
-        </thead>
-        <tbody id="tmpl-tbody"></tbody>
-      </table>
-    </section>
 
-    <section id="section-edit-msg" class="section">
-      <h1>過去の時間割メッセージ編集</h1>
-      <button id="fetch-recent-msg-btn" style="margin-bottom: 15px;">メッセージ一覧を取得</button>
-      <div id="recent-messages-container"></div>
-    </section>
+      <div id="section-terms">
+        <div class="card">
+          <div class="card-header">
+            <h2>利用規約</h2>
+            <button id="edit-terms-btn" class="btn btn-primary btn-sm">編集</button>
+          </div>
+          <div id="terms-view">
+            <h3 id="terms-title-display" style="margin-bottom: 8px; font-size:1rem;">読み込み中...</h3>
+            <div id="terms-text-display" class="markdown-body">読み込み中...</div>
+            <div class="footer-preview">フッター: <span id="footer-preview-display">読み込み中...</span></div>
+          </div>
+          <div id="terms-edit" class="hidden">
+            <div class="form-group">
+              <label for="terms-title-input">タイトル（任意）</label>
+              <input type="text" id="terms-title-input" placeholder="タイトルなしにする場合は空欄">
+            </div>
+            <div class="form-group">
+              <label for="terms-color-input">埋め込みカラー</label>
+              <div class="color-picker-wrapper">
+                <input type="color" id="terms-color-input" value="#3498db">
+                <span id="color-code-text" style="font-size:0.85rem;">#3498db</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>規約本文（必須）</label>
+              <div class="toolbar">
+                <button type="button" id="btn-bold"><b>B</b></button>
+                <button type="button" id="btn-italic"><i>I</i></button>
+                <button type="button" id="btn-underline"><u>U</u></button>
+                <button type="button" id="btn-strike"><s>S</s></button>
+                <button type="button" id="btn-spoiler">|| ネタバレ ||</button>
+              </div>
+              <div id="editor" class="editor-area" contenteditable="true"></div>
+            </div>
+            <div class="action-buttons">
+              <button class="btn btn-secondary btn-sm cancel-terms-btn">前へ</button>
+              <button id="save-terms-btn" class="btn btn-success btn-sm">更新</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    <section id="section-bot-config" class="section">
-      <h1>bot設定</h1>
-      <p style="color: #666; font-size: 0.9rem;">botに関するシステム設定項目です。</p>
-    </section>
+      <div id="section-timetable" class="hidden">
+        <div class="card">
+          <div class="card-header"><h2>時間割管理</h2></div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; padding: 10px 0;">
+            <button id="goto-seed-btn" class="btn btn-primary">シードを設定</button>
+            <button id="goto-send-btn" class="btn btn-success">時間割送信</button>
+            <button id="goto-template-btn" class="btn btn-secondary">テンプレの編集</button>
+            <button id="goto-reservation-btn" class="btn btn-primary" style="background-color: #8e44ad;">予約送信リスト</button>
+            <button id="goto-editmsg-btn" class="btn btn-secondary" style="background-color: #d35400;">過去メッセージ編集</button>
+          </div>
+        </div>
+      </div>
 
+      <div id="section-seed-form" class="hidden">
+        <div class="card">
+          <div class="card-header"><h2>シード設定：ステップ1 (情報入力)</h2></div>
+          <div class="form-group">
+            <label>授業数（必須）</label>
+            <div id="seed-periods-options" class="radio-group">
+              <label><input type="radio" name="seed-periods" value="1"> １時間</label>
+              <label><input type="radio" name="seed-periods" value="2"> ２時間</label>
+              <label><input type="radio" name="seed-periods" value="3"> ３時間</label>
+              <label><input type="radio" name="seed-periods" value="4"> ４時間</label>
+              <label><input type="radio" name="seed-periods" value="5" checked> ５時間</label>
+              <label><input type="radio" name="seed-periods" value="6"> ６時間</label>
+              <label><input type="radio" name="seed-periods" value="7"> ７時間</label>
+              <label><input type="radio" name="seed-periods" value="8"> ８時間</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>登録する日</label>
+            <div id="seed-date-options" class="radio-group">
+              <label><input type="radio" name="seed-date" value="0" checked> <span id="label-date-0">今日</span></label>
+              <label><input type="radio" name="seed-date" value="1"> <span id="label-date-1">明日</span></label>
+              <label><input type="radio" name="seed-date" value="2"> <span id="label-date-2">明後日</span></label>
+            </div>
+          </div>
+          <div class="action-buttons">
+            <button class="btn btn-secondary back-to-tt-home">前へ</button>
+            <button id="seed-step1-next" class="btn btn-primary">次へ</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="section-seed-grid" class="hidden">
+        <div class="card">
+          <div class="card-header"><h2 id="seed-grid-title">シード設定：ステップ2 (表入力)</h2></div>
+          <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 250px;">
+              <table class="tt-table" id="seed-table-element">
+                <thead>
+                  <tr><th>＼</th><th>①</th><th>②</th><th>③</th><th>④</th></tr>
+                </thead>
+                <tbody id="seed-tbody"></tbody>
+              </table>
+              <div style="margin-top: 5px;">
+                <button id="seed-reset-btn" class="btn btn-danger btn-sm">リセット</button>
+              </div>
+            </div>
+            <div style="width: 180px; display: flex; flex-direction: column; gap: 6px;">
+              <label style="font-weight:bold; font-size:0.85rem;">テンプレ読込</label>
+              <button class="btn btn-sm btn-secondary apply-tmpl" data-day="mon">月曜日のテンプレ</button>
+              <button class="btn btn-sm btn-secondary apply-tmpl" data-day="tue">火曜日のテンプレ</button>
+              <button class="btn btn-sm btn-secondary apply-tmpl" data-day="wed">水曜日のテンプレ</button>
+              <button class="btn btn-sm btn-secondary apply-tmpl" data-day="thu">木曜日のテンプレ</button>
+              <button class="btn btn-sm btn-secondary apply-tmpl" data-day="fri">金曜日のテンプレ</button>
+            </div>
+          </div>
+          <div class="form-group" style="margin-top: 15px;">
+            <label>備考欄</label>
+            <textarea id="seed-remark-input" rows="3" placeholder="備考を入力"></textarea>
+          </div>
+          <div class="action-buttons">
+            <button id="seed-step2-prev" class="btn btn-secondary">前へ</button>
+            <button id="seed-register-btn" class="btn btn-success">登録</button>
+            <button id="seed-reserve-btn" class="btn btn-primary" style="background-color: #27ae60;">予約送信登録</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="section-send-form" class="hidden">
+        <div class="card">
+          <div class="card-header"><h2>時間割送信：いつの時間割を送信するか</h2></div>
+          <div class="form-group">
+            <div id="send-date-options" class="radio-group">
+              <label><input type="radio" name="send-date" value="0"> <span id="send-label-date-0">今日</span></label>
+              <label><input type="radio" name="send-date" value="1"> <span id="send-label-date-1">明日</span></label>
+              <label><input type="radio" name="send-date" value="2"> <span id="send-label-date-2">明後日</span></label>
+            </div>
+          </div>
+          <div class="action-buttons">
+            <button class="btn btn-secondary back-to-tt-home">前へ</button>
+            <button id="send-step1-next" class="btn btn-primary">次へ</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="section-send-editor" class="hidden">
+        <div class="card">
+          <div class="card-header"><h2>時間割送信：詳細・変更設定</h2></div>
+          <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+            <div style="width: 200px; background: #fafafa; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+              <div class="form-group radio-group">
+                <label style="font-size:0.8rem; font-weight:bold;">鍵残留状況</label>
+                <label style="font-size:0.8rem;"><input type="checkbox" name="key-status" value="1-1"> 1-1</label>
+                <label style="font-size:0.8rem;"><input type="checkbox" name="key-status" value="1-2"> 1-2</label>
+                <label style="font-size:0.8rem;"><input type="checkbox" name="key-status" value="1-3"> 1-3</label>
+                <label style="font-size:0.8rem;"><input type="checkbox" name="key-status" value="1-4"> 1-4</label>
+              </div>
+              <div class="form-group radio-group">
+                <label style="font-size:0.8rem; font-weight:bold;">カット選択</label>
+                <div id="cut-checkboxes-container" style="font-size:0.8rem;">シード科目から自動生成されます</div>
+              </div>
+            </div>
+            <div style="flex: 1; min-width: 250px;">
+              <table class="tt-table" id="send-table-element">
+                <thead>
+                  <tr><th>＼</th><th>①</th><th>②</th><th>③</th><th>④</th></tr>
+                </thead>
+                <tbody id="send-tbody"></tbody>
+              </table>
+              <div class="form-group" style="margin-top: 10px;">
+                <label>備考欄</label>
+                <textarea id="send-remark-input" rows="2"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="action-buttons">
+            <button id="send-step2-prev" class="btn btn-secondary">前へ</button>
+            <button id="send-execute-btn" class="btn btn-success">送信</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="section-template-editor" class="hidden">
+        <div class="card">
+          <div class="card-header"><h2>テンプレートの編集</h2></div>
+          <div class="form-group">
+            <label>曜日を選択</label>
+            <select id="tmpl-day-select">
+              <option value="mon">月曜日のテンプレ</option>
+              <option value="tue">火曜日のテンプレ</option>
+              <option value="wed">水曜日のテンプレ</option>
+              <option value="thu">木曜日のテンプレ</option>
+              <option value="fri">金曜日のテンプレ</option>
+            </select>
+          </div>
+          <div style="margin: 10px 0;">
+            <table class="tt-table" id="tmpl-table-element">
+              <thead>
+                <tr><th>＼</th><th>①</th><th>②</th><th>③</th><th>④</th></tr>
+              </thead>
+              <tbody id="tmpl-tbody"></tbody>
+            </table>
+          </div>
+          <div class="action-buttons">
+            <button class="btn btn-secondary back-to-tt-home">前へ</button>
+            <button id="tmpl-save-btn" class="btn btn-success">更新</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="section-reservation-list" class="hidden">
+        <div class="card">
+          <div class="card-header"><h2>予約送信リスト (日付・時刻順)</h2></div>
+          <p style="margin-bottom: 12px; font-size: 0.85rem; color: #666;">現在登録されている予約送信の一覧です。</p>
+          <div id="reservation-list-container">読み込み中...</div>
+          <div class="action-buttons" style="margin-top: 15px;">
+            <button class="btn btn-secondary back-to-tt-home">前へ</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="section-edit-msg" class="hidden">
+        <div class="card">
+          <div class="card-header"><h2>過去の時間割メッセージ編集</h2></div>
+          <p style="margin-bottom: 12px; font-size: 0.85rem; color: #666;">送信済みのメッセージを取得して修正できます。</p>
+          <button id="fetch-recent-msg-btn" class="btn btn-primary btn-sm" style="margin-bottom: 15px;">メッセージ一覧を取得</button>
+          <div id="recent-messages-container"></div>
+          <div class="action-buttons" style="margin-top: 15px;">
+            <button class="btn btn-secondary back-to-tt-home">前へ</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
   </div>
 
   <script>
-    const API_BASE = "";
+    const RENDER_API_URL = "https://nada84group.onrender.com";
 
-    // タブ切り替え
-    document.querySelectorAll('.sidebar a').forEach(link => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.querySelectorAll('.sidebar a').forEach(l => l.classList.remove('active'));
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        link.classList.add('active');
-        const target = link.getAttribute('data-target');
-        document.getElementById(target).classList.add('active');
-        if(target === 'section-reservations') loadReservations();
-      });
-    });
+    let appState = {
+      version: "2.00.00",
+      title: "",
+      content: "",
+      color: "#3498db",
+      seeds: {},
+      templates: {}
+    };
 
-    let appData = {};
+    let seedFormState = { periods: 5, dateOffset: 0, grid: [], remark: "" };
+    let sendFormState = { dateOffset: 0, customGrid: {}, editedCells: {}, cuts: [], keys: [], remark: "" };
+    let tmplFormState = { day: 'mon', grid: [] };
+
+    const hamburgerBtn = document.getElementById('hamburger-btn');
+    const sidebar = document.getElementById('sidebar');
+    
+    const menuVersion = document.getElementById('menu-version');
+    const menuTerms = document.getElementById('menu-terms');
+    const menuTimetable = document.getElementById('menu-timetable');
+
+    const sectionVersion = document.getElementById('section-version');
+    const sectionTerms = document.getElementById('section-terms');
+    const sectionTimetable = document.getElementById('section-timetable');
+    const sectionSeedForm = document.getElementById('section-seed-form');
+    const sectionSeedGrid = document.getElementById('section-seed-grid');
+    const sectionSendForm = document.getElementById('section-send-form');
+    const sectionSendEditor = document.getElementById('section-send-editor');
+    const sectionTemplateEditor = document.getElementById('section-template-editor');
+    const sectionReservationList = document.getElementById('section-reservation-list');
+    const sectionEditMsg = document.getElementById('section-edit-msg');
 
     async function fetchSettings() {
+      const badge = document.getElementById('bot-status-badge');
+      const statusText = document.getElementById('bot-status-text');
       try {
-        const res = await fetch(`${API_BASE}/api/get-settings`);
-        appData = await res.json();
-        
-        document.getElementById('version-input').value = appData.version || "";
-        document.getElementById('terms-title-input').value = appData.title || "";
-        document.getElementById('terms-color-input').value = appData.color || "#3498db";
-        document.getElementById('terms-content-input').value = appData.content || "";
+        const res = await fetch(`${RENDER_API_URL}/api/get-settings`);
+        if (!res.ok) throw new Error("取得失敗");
+        appState = await res.json();
+        renderView();
 
-        initTimetableGrid();
-        initTemplateGrid();
-      } catch(e) {
-        console.error("設定取得エラー:", e);
+        badge.className = "status-badge online";
+        statusText.innerText = "オンライン";
+      } catch (err) {
+        console.error(err);
+        badge.className = "status-badge offline";
+        statusText.innerText = "オフライン（サーバー接続エラー）";
       }
     }
 
-    function initTimetableGrid() {
-      const periods = parseInt(document.getElementById('tt-periods').value) || 6;
-      const tbody = document.getElementById('tt-tbody');
+    function renderView() {
+      document.getElementById('terms-title-display').innerText = appState.title || "";
+      document.getElementById('terms-title-display').style.display = appState.title.trim() ? "block" : "none";
+      document.getElementById('terms-text-display').innerHTML = markdownToHtml(appState.content);
+      document.getElementById('version-display').innerText = appState.version;
+      document.getElementById('footer-preview-display').innerText = `N84ボット v${appState.version}`;
+      setupDateLabels();
+    }
+
+    function setupDateLabels() {
+      const now = new Date();
+      for (let i = 0; i < 3; i++) {
+        let d = new Date(now);
+        d.setDate(now.getDate() + i);
+        let m = d.getMonth() + 1;
+        let day = d.getDate();
+        let str = `${m}月${day}日`;
+        
+        let el0 = document.getElementById(`label-date-${i}`);
+        if (el0) el0.innerText = str;
+        let el1 = document.getElementById(`send-label-date-${i}`);
+        if (el1) el1.innerText = str;
+      }
+    }
+
+    function markdownToHtml(text) {
+      if (!text) return "";
+      return text
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/\|\|(.*?)\|\|/g, '<span class="spoiler" onclick="this.classList.add(\'revealed\')">$1</span>')
+        .replace(/__(.*?)__/g, '<u>$1</u>')
+        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+        .replace(/~~(.*?)~~/g, '<s>$1<s>')
+        .replace(/\*(.*?)\*/g, '<i>$1</i>')
+        .replace(/\n/g, '<br>');
+    }
+
+    fetchSettings();
+    hamburgerBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
+
+    function switchSection(targetSec, updateHistory = true, path = "") {
+      [sectionVersion, sectionTerms, sectionTimetable, sectionSeedForm, sectionSeedGrid, sectionSendForm, sectionSendEditor, sectionTemplateEditor, sectionReservationList, sectionEditMsg].forEach(s => s.classList.add('hidden'));
+      [menuVersion, menuTerms, menuTimetable].forEach(m => m.classList.remove('active'));
+      targetSec.classList.remove('hidden');
+
+      if (updateHistory && path) {
+        history.pushState(null, "", path);
+      }
+    }
+
+    function handleRouting() {
+      const path = window.location.pathname;
+      if (path === '/version') {
+        menuVersion.classList.add('active');
+        switchSection(sectionVersion, false);
+      } else if (path === '/timetable') {
+        menuTimetable.classList.add('active');
+        switchSection(sectionTimetable, false);
+      } else {
+        menuTerms.classList.add('active');
+        switchSection(sectionTerms, false);
+      }
+    }
+
+    menuVersion.addEventListener('click', (e) => {
+      e.preventDefault();
+      menuVersion.classList.add('active');
+      switchSection(sectionVersion, true, '/version');
+    });
+
+    menuTerms.addEventListener('click', (e) => {
+      e.preventDefault();
+      menuTerms.classList.add('active');
+      switchSection(sectionTerms, true, '/terms');
+    });
+
+    menuTimetable.addEventListener('click', (e) => {
+      e.preventDefault();
+      menuTimetable.classList.add('active');
+      switchSection(sectionTimetable, true, '/timetable');
+    });
+
+    window.addEventListener('popstate', handleRouting);
+    handleRouting();
+
+    document.querySelectorAll('.back-to-tt-home').forEach(btn => {
+      btn.addEventListener('click', () => {
+        menuTimetable.classList.add('active');
+        switchSection(sectionTimetable, true, '/timetable');
+      });
+    });
+
+    const editVersionBtn = document.getElementById('edit-version-btn');
+    const editTermsBtn = document.getElementById('edit-terms-btn');
+    const versionView = document.getElementById('version-view');
+    const versionEdit = document.getElementById('version-edit');
+    const termsView = document.getElementById('terms-view');
+    const termsEdit = document.getElementById('terms-edit');
+    const vMajor = document.getElementById('v-major');
+    const vMinor = document.getElementById('v-minor');
+    const vPatch = document.getElementById('v-patch');
+    const termsTitleInput = document.getElementById('terms-title-input');
+    const termsColorInput = document.getElementById('terms-color-input');
+    const colorCodeText = document.getElementById('color-code-text');
+    const editor = document.getElementById('editor');
+
+    [vMajor, vMinor, vPatch].forEach((input, idx, arr) => {
+      input.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+        const maxLen = parseInt(e.target.getAttribute('maxlength'));
+        if (e.target.value.length >= maxLen && arr[idx + 1]) {
+          arr[idx + 1].focus();
+        }
+      });
+    });
+
+    editVersionBtn.addEventListener('click', () => {
+      editVersionBtn.classList.add('hidden');
+      const parts = appState.version.split('.');
+      vMajor.value = parts[0] || '';
+      vMinor.value = parts[1] || '';
+      vPatch.value = parts[2] || '';
+      versionView.classList.add('hidden');
+      versionEdit.classList.remove('hidden');
+    });
+
+    editTermsBtn.addEventListener('click', () => {
+      editTermsBtn.classList.add('hidden');
+      termsTitleInput.value = appState.title;
+      termsColorInput.value = appState.color;
+      colorCodeText.innerText = appState.color;
+      editor.innerHTML = markdownToHtml(appState.content);
+      termsView.classList.add('hidden');
+      termsEdit.classList.remove('hidden');
+    });
+
+    function exitEditMode() {
+      editVersionBtn.classList.remove('hidden');
+      editTermsBtn.classList.remove('hidden');
+      versionView.classList.remove('hidden');
+      versionEdit.classList.add('hidden');
+      termsView.classList.remove('hidden');
+      termsEdit.classList.add('hidden');
+    }
+
+    document.querySelector('.cancel-version-btn').addEventListener('click', exitEditMode);
+    document.querySelector('.cancel-terms-btn').addEventListener('click', exitEditMode);
+    termsColorInput.addEventListener('input', (e) => colorCodeText.innerText = e.target.value);
+
+    document.getElementById('save-version-btn').addEventListener('click', async () => {
+      const maj = vMajor.value.trim();
+      const min = vMinor.value.trim();
+      const pat = vPatch.value.trim();
+      if (!maj || !min || !pat) { alert('全てのバージョンを入力してください'); return; }
+      const newVer = `${maj}.${min}.${pat}`;
+
+      try {
+        const res = await fetch(`${RENDER_API_URL}/api/update-version`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ version: newVer })
+        });
+        if (res.ok) {
+          alert('バージョンを更新しました');
+          await fetchSettings();
+          exitEditMode();
+        } else {
+          throw new Error("サーバーエラー");
+        }
+      } catch (err) {
+        alert('サーバーへの通信に失敗しました。');
+      }
+    });
+
+    document.getElementById('save-terms-btn').addEventListener('click', async () => {
+      const newTitle = termsTitleInput.value;
+      const newColor = termsColorInput.value;
+      const newContent = editor.innerText;
+
+      try {
+        const res = await fetch(`${RENDER_API_URL}/api/update-terms`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: newTitle, color: newColor, content: newContent })
+        });
+        if (res.ok) {
+          alert('利用規約を保存し、Discord上のメッセージを更新しました！');
+          fetchSettings();
+          exitEditMode();
+        } else {
+          alert('保存に失敗しました');
+        }
+      } catch (err) {
+        alert('サーバーへの通信に失敗しました。');
+      }
+    });
+
+    /* --- シード設定関連 --- */
+    document.getElementById('goto-seed-btn').addEventListener('click', () => switchSection(sectionSeedForm, false));
+
+    document.getElementById('seed-step1-next').addEventListener('click', () => {
+      const pRadio = document.querySelector('input[name="seed-periods"]:checked');
+      const dRadio = document.querySelector('input[name="seed-date"]:checked');
+      if (!pRadio) { alert('授業数を選択してください'); return; }
+      
+      seedFormState.periods = parseInt(pRadio.value);
+      seedFormState.dateOffset = parseInt(dRadio.value);
+
+      seedFormState.grid = [];
+      for (let r = 0; r < seedFormState.periods; r++) {
+        seedFormState.grid.push(["", "", "", ""]);
+      }
+      seedFormState.remark = "";
+      document.getElementById('seed-remark-input').value = "";
+
+      buildSeedTable();
+      switchSection(sectionSeedGrid, false);
+    });
+
+    function buildSeedTable() {
+      const tbody = document.getElementById('seed-tbody');
       tbody.innerHTML = "";
       const rNumMap = ["１", "２", "３", "４", "５", "６", "７", "８"];
 
-      for(let r=0; r<periods; r++) {
+      for (let r = 0; r < seedFormState.periods; r++) {
         let tr = document.createElement('tr');
         let th = document.createElement('th');
         th.innerText = rNumMap[r];
         tr.appendChild(th);
-        for(let c=0; c<4; c++) {
+
+        for (let c = 0; c < 4; c++) {
           let td = document.createElement('td');
           let input = document.createElement('input');
           input.type = "text";
-          input.maxLength = 1;
-          input.className = `tt-cell-${r}-${c}`;
+          input.maxLength = 5;
+          input.value = seedFormState.grid[r][c] || "";
+          input.addEventListener('input', (e) => {
+            seedFormState.grid[r][c] = e.target.value;
+          });
           td.appendChild(input);
           tr.appendChild(td);
         }
@@ -246,135 +674,346 @@
       }
     }
 
-    document.getElementById('tt-periods').addEventListener('change', initTimetableGrid);
+    document.getElementById('seed-reset-btn').addEventListener('click', () => {
+      for (let r = 0; r < seedFormState.periods; r++) {
+        for (let c = 0; c < 4; c++) {
+          seedFormState.grid[r][c] = "";
+        }
+      }
+      buildSeedTable();
+    });
 
-    function initTemplateGrid() {
-      const day = document.getElementById('tmpl-day-select').value;
-      const tbody = document.getElementById('tmpl-tbody');
-      tbody.innerHTML = "";
-      const grid = appData.templates && appData.templates[day] ? appData.templates[day] : [];
-      const rNumMap = ["１", "２", "３", "４", "５", "６", "７", "８"];
+    document.querySelectorAll('.apply-tmpl').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        let dayKey = e.target.getAttribute('data-day');
+        let tmpl = appState.templates[dayKey];
+        if (!tmpl) return;
 
-      grid.forEach((row, r) => {
-        let tr = document.createElement('tr');
-        let th = document.createElement('th');
-        th.innerText = rNumMap[r] || (r+1);
-        tr.appendChild(th);
-        row.forEach((cellVal, c) => {
-          let td = document.createElement('td');
-          let input = document.createElement('input');
-          input.type = "text";
-          input.value = cellVal || "";
-          input.className = `tmpl-cell-${r}-${c}`;
-          td.appendChild(input);
-          tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
+        for (let r = 0; r < seedFormState.periods; r++) {
+          for (let c = 0; c < 4; c++) {
+            if (tmpl[r] && tmpl[r][c] !== undefined) {
+              seedFormState.grid[r][c] = tmpl[r][c];
+            } else {
+              seedFormState.grid[r][c] = "";
+            }
+          }
+        }
+        buildSeedTable();
       });
-    }
+    });
 
-    document.getElementById('tmpl-day-select').addEventListener('change', initTemplateGrid);
+    document.getElementById('seed-step2-prev').addEventListener('click', () => switchSection(sectionSeedForm, false));
 
-    document.getElementById('save-terms-btn').addEventListener('click', async () => {
-      const version = document.getElementById('version-input').value;
-      const title = document.getElementById('terms-title-input').value;
-      const color = document.getElementById('terms-color-input').value;
-      const content = document.getElementById('terms-content-input').value;
+    document.getElementById('seed-register-btn').addEventListener('click', async () => {
+      for (let r = 0; r < seedFormState.periods; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (!seedFormState.grid[r][c] || seedFormState.grid[r][c].trim() === "") {
+            alert('表がすべて埋まっていないと登録できません。');
+            return;
+          }
+        }
+      }
 
-      const res = await fetch(`${API_BASE}/api/update-terms`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, color, content })
-      });
-      const data = await res.json();
-      if(data.success) {
-        await fetch(`${API_BASE}/api/update-version`, {
+      seedFormState.remark = document.getElementById('seed-remark-input').value;
+
+      let targetDate = new Date();
+      targetDate.setDate(targetDate.getDate() + seedFormState.dateOffset);
+      let dateKey = targetDate.toISOString().split('T')[0];
+
+      try {
+        const res = await fetch(`${RENDER_API_URL}/api/save-seed`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ version })
+          body: JSON.stringify({
+            dateKey,
+            periods: seedFormState.periods,
+            grid: seedFormState.grid,
+            remark: seedFormState.remark
+          })
         });
-        alert('利用規約とバージョンを更新し、Discordに反映しました！');
-      } else {
-        alert('更新に失敗しました。');
+
+        if (res.ok) {
+          const data = await res.json();
+          appState.seeds = data.seeds;
+          alert('シードを登録しました！');
+          menuTimetable.classList.add('active');
+          switchSection(sectionTimetable, true, '/timetable');
+        } else {
+          alert('シード登録に失敗しました');
+        }
+      } catch (err) {
+        alert('サーバーへの通信に失敗しました。');
       }
     });
 
-    document.getElementById('tt-send-now-btn').addEventListener('click', async () => {
-      const dateKey = document.getElementById('tt-date').value;
-      if(!dateKey) { alert('日付を選択してください'); return; }
+    // シード画面からの予約送信登録
+    document.getElementById('seed-reserve-btn').addEventListener('click', async () => {
+      seedFormState.remark = document.getElementById('seed-remark-input').value;
+      let targetDate = new Date();
+      targetDate.setDate(targetDate.getDate() + seedFormState.dateOffset);
+      let dateKey = targetDate.toISOString().split('T')[0];
+      let scheduledTime = new Date(dateKey + "T08:00:00").toISOString();
 
-      const periods = parseInt(document.getElementById('tt-periods').value);
-      let customGrid = [];
-      for(let r=0; r<periods; r++) {
-        let row = [];
-        for(let c=0; c<4; c++) {
-          const inp = document.querySelector(`.tt-cell-${r}-${c}`);
-          row.push(inp ? inp.value : "");
+      try {
+        const res = await fetch(`${RENDER_API_URL}/api/add-reservation`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            dateKey,
+            scheduledTime,
+            customGrid: seedFormState.grid,
+            cuts: [],
+            keys: [],
+            periods: seedFormState.periods
+          })
+        });
+        const data = await res.json();
+        if(data.success) {
+          alert('予約送信リストに登録しました！');
+          document.getElementById('goto-reservation-btn').click();
+        } else {
+          alert('登録に失敗しました。');
         }
-        customGrid.push(row);
-      }
-
-      const remark = document.getElementById('tt-remark').value;
-      const cuts = document.getElementById('tt-cuts').value.split(',').map(s=>s.trim()).filter(Boolean);
-      const keys = document.getElementById('tt-keys').value.split(',').map(s=>s.trim()).filter(Boolean);
-
-      await fetch(`${API_BASE}/api/save-seed`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dateKey, periods, grid: customGrid, remark })
-      });
-
-      const res = await fetch(`${API_BASE}/api/send-timetable`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dateKey, customGrid, cuts, keys, periods })
-      });
-      const data = await res.json();
-      if(data.success) {
-        alert('時間割をDiscordに送信しました！');
-      } else {
-        alert('送信に失敗しました。');
+      } catch(e) {
+        alert('サーバーへの通信に失敗しました。');
       }
     });
 
-    document.getElementById('tt-reserve-btn').addEventListener('click', async () => {
-      const dateKey = document.getElementById('tt-date').value;
-      if(!dateKey) { alert('日付を選択してください'); return; }
+    /* --- 時間割送信関連 --- */
+    document.getElementById('goto-send-btn').addEventListener('click', () => {
+      const now = new Date();
+      for (let i = 0; i < 3; i++) {
+        let d = new Date(now);
+        d.setDate(now.getDate() + i);
+        let dKey = d.toISOString().split('T')[0];
+        let radio = document.querySelector(`input[name="send-date"][value="${i}"]`);
+        let labelSpan = document.getElementById(`send-label-date-${i}`).parentNode;
 
-      const periods = parseInt(document.getElementById('tt-periods').value);
-      let customGrid = [];
-      for(let r=0; r<periods; r++) {
-        let row = [];
-        for(let c=0; c<4; c++) {
-          const inp = document.querySelector(`.tt-cell-${r}-${c}`);
-          row.push(inp ? inp.value : "");
+        if (!appState.seeds[dKey]) {
+          radio.disabled = true;
+          labelSpan.classList.add('disabled-option');
+        } else {
+          radio.disabled = false;
+          labelSpan.classList.remove('disabled-option');
         }
-        customGrid.push(row);
       }
+      switchSection(sectionSendForm, false);
+    });
 
-      const cuts = document.getElementById('tt-cuts').value.split(',').map(s=>s.trim()).filter(Boolean);
-      const keys = document.getElementById('tt-keys').value.split(',').map(s=>s.trim()).filter(Boolean);
-      const scheduledTime = new Date(dateKey + "T08:00:00").toISOString();
+    document.getElementById('send-step1-next').addEventListener('click', () => {
+      const sel = document.querySelector('input[name="send-date"]:checked');
+      if (!sel) { alert('送信する時間割を選択してください'); return; }
+      
+      let offset = parseInt(sel.value);
+      let targetDate = new Date();
+      targetDate.setDate(targetDate.getDate() + offset);
+      let dKey = targetDate.toISOString().split('T')[0];
 
-      const res = await fetch(`${API_BASE}/api/add-reservation`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dateKey, scheduledTime, customGrid, cuts, keys, periods })
+      sendFormState.dateOffset = offset;
+      sendFormState.dateKey = dKey;
+      sendFormState.seedData = appState.seeds[dKey];
+      sendFormState.customGrid = {};
+      sendFormState.editedCells = {};
+      sendFormState.cuts = [];
+      sendFormState.keys = [];
+      sendFormState.remark = sendFormState.seedData.remark || "";
+
+      document.getElementById('send-remark-input').value = sendFormState.remark;
+
+      buildSendEditor();
+      switchSection(sectionSendEditor, false);
+    });
+
+    function buildSendEditor() {
+      document.querySelectorAll('input[name="key-status"]').forEach(ch => ch.checked = false);
+
+      let uniqueSubjects = new Set();
+      let seedGrid = sendFormState.seedData.grid;
+      seedGrid.forEach(row => row.forEach(val => { if (val) uniqueSubjects.add(val); }));
+
+      let cutContainer = document.getElementById('cut-checkboxes-container');
+      cutContainer.innerHTML = "";
+      uniqueSubjects.forEach(subj => {
+        let label = document.createElement('label');
+        let chk = document.createElement('input');
+        chk.type = "checkbox";
+        chk.name = "cut-subj";
+        chk.value = subj;
+        label.appendChild(chk);
+        label.appendChild(document.createTextNode(` ${subj}カット`));
+        label.style.display = "block";
+        cutContainer.appendChild(label);
       });
-      const data = await res.json();
-      if(data.success) {
-        alert('予約送信リストに登録しました！');
-        document.querySelector('[data-target="section-reservations"]').click();
-      } else {
-        alert('登録に失敗しました。');
+
+      const tbody = document.getElementById('send-tbody');
+      tbody.innerHTML = "";
+      const periods = sendFormState.seedData.periods;
+      const rNumMap = ["１", "２", "３", "４", "５", "６", "７", "８"];
+
+      for (let r = 0; r < periods; r++) {
+        let tr = document.createElement('tr');
+        let th = document.createElement('th');
+        th.innerText = rNumMap[r];
+        tr.appendChild(th);
+
+        for (let c = 0; c < 4; c++) {
+          let td = document.createElement('td');
+          let seedVal = seedGrid[r][c] || "";
+
+          let input = document.createElement('input');
+          input.type = "text";
+          input.value = seedVal;
+          td.classList.add('gray-mode');
+
+          input.addEventListener('focus', () => {
+            td.classList.remove('gray-mode');
+            td.classList.add('editable');
+            if (input.value === seedVal && !sendFormState.customGrid[`${r}-${c}`]) {
+              input.value = "";
+            }
+          });
+
+          input.addEventListener('input', (e) => {
+            let val = e.target.value;
+            if (!sendFormState.customGrid[r]) sendFormState.customGrid[r] = {};
+            sendFormState.customGrid[r][c] = val;
+
+            if (val.trim() !== "") {
+              sendFormState.editedCells[`${r}-${c}`] = true;
+            } else {
+              delete sendFormState.editedCells[`${r}-${c}`];
+            }
+          });
+
+          input.addEventListener('blur', () => {
+            if (!input.value) {
+              td.classList.add('gray-mode');
+              td.classList.remove('editable');
+              input.value = seedVal;
+            }
+          });
+
+          td.appendChild(input);
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
       }
+    }
+
+    document.getElementById('send-step2-prev').addEventListener('click', () => switchSection(sectionSendForm, false));
+
+    document.getElementById('send-execute-btn').addEventListener('click', async () => {
+      sendFormState.keys = [];
+      document.querySelectorAll('input[name="key-status"]:checked').forEach(ch => sendFormState.keys.push(ch.value));
+
+      sendFormState.cuts = [];
+      document.querySelectorAll('input[name="cut-subj"]:checked').forEach(ch => sendFormState.cuts.push(ch.value));
+
+      sendFormState.remark = document.getElementById('send-remark-input').value;
+
+      try {
+        const res = await fetch(`${RENDER_API_URL}/api/send-timetable`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            dateKey: sendFormState.dateKey,
+            customGrid: sendFormState.customGrid,
+            editedCells: sendFormState.editedCells,
+            cuts: sendFormState.cuts,
+            keys: sendFormState.keys
+          })
+        });
+
+        if (res.ok) {
+          alert('時間割をDiscordへ送信しました！');
+          menuTimetable.classList.add('active');
+          switchSection(sectionTimetable, true, '/timetable');
+        } else {
+          alert('時間割の送信に失敗しました');
+        }
+      } catch (err) {
+        alert('サーバーへの通信に失敗しました。');
+      }
+    });
+
+    /* --- テンプレート編集関連 --- */
+    document.getElementById('goto-template-btn').addEventListener('click', () => {
+      tmplFormState.day = 'mon';
+      document.getElementById('tmpl-day-select').value = 'mon';
+      buildTemplateTable();
+      switchSection(sectionTemplateEditor, false);
+    });
+
+    document.getElementById('tmpl-day-select').addEventListener('change', (e) => {
+      tmplFormState.day = e.target.value;
+      buildTemplateTable();
+    });
+
+    function buildTemplateTable() {
+      const tbody = document.getElementById('tmpl-tbody');
+      tbody.innerHTML = "";
+      const tmplGrid = appState.templates[tmplFormState.day] || [];
+      const rNumMap = ["１", "２", "３", "４", "５", "６", "７", "８"];
+
+      for (let r = 0; r < 7; r++) {
+        let tr = document.createElement('tr');
+        let th = document.createElement('th');
+        th.innerText = rNumMap[r];
+        tr.appendChild(th);
+
+        for (let c = 0; c < 4; c++) {
+          let td = document.createElement('td');
+          let input = document.createElement('input');
+          input.type = "text";
+          input.value = (tmplGrid[r] && tmplGrid[r][c]) ? tmplGrid[r][c] : "";
+          
+          input.addEventListener('input', (e) => {
+            if (!appState.templates[tmplFormState.day][r]) {
+              appState.templates[tmplFormState.day][r] = ["", "", "", ""];
+            }
+            appState.templates[tmplFormState.day][r][c] = e.target.value;
+          });
+          td.appendChild(input);
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+    }
+
+    document.getElementById('tmpl-save-btn').addEventListener('click', async () => {
+      try {
+        const res = await fetch(`${RENDER_API_URL}/api/save-templates`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            day: tmplFormState.day,
+            grid: appState.templates[tmplFormState.day]
+          })
+        });
+
+        if (res.ok) {
+          alert('テンプレートを保存しました！次回より有効になります。');
+          menuTimetable.classList.add('active');
+          switchSection(sectionTimetable, true, '/timetable');
+        } else {
+          alert('テンプレートの保存に失敗しました');
+        }
+      } catch (err) {
+        alert('サーバーへの通信に失敗しました。');
+      }
+    });
+
+    /* --- 予約送信リスト関連 --- */
+    document.getElementById('goto-reservation-btn').addEventListener('click', () => {
+      switchSection(sectionReservationList, false);
+      loadReservations();
     });
 
     async function loadReservations() {
       const container = document.getElementById('reservation-list-container');
       container.innerHTML = "読み込み中...";
       try {
-        const res = await fetch(`${API_BASE}/api/get-reservations`);
+        const res = await fetch(`${RENDER_API_URL}/api/get-reservations`);
         const data = await res.json();
         const list = data.reservations || [];
 
@@ -397,8 +1036,8 @@
               <p>⏰ 予約日時: ${dateStr} ${timeStr}</p>
               <p>カット: ${item.cuts && item.cuts.length ? item.cuts.join(',') : 'なし'} | 鍵残留: ${item.keys && item.keys.length ? item.keys.join(',') : 'なし'}</p>
             </div>
-            <div class="reservation-actions">
-              <button class="danger" onclick="deleteReservation('${item.id}')">削除</button>
+            <div>
+              <button class="btn btn-danger btn-sm" onclick="deleteReservation('${item.id}')">削除</button>
             </div>
           `;
           container.appendChild(card);
@@ -410,51 +1049,34 @@
 
     async function deleteReservation(id) {
       if(!confirm('この予約を削除しますか？')) return;
-      const res = await fetch(`${API_BASE}/api/delete-reservation`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
-      });
-      const data = await res.json();
-      if(data.success) {
-        loadReservations();
-      } else {
-        alert('削除に失敗しました。');
+      try {
+        const res = await fetch(`${RENDER_API_URL}/api/delete-reservation`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
+        const data = await res.json();
+        if(data.success) {
+          loadReservations();
+        } else {
+          alert('削除に失敗しました。');
+        }
+      } catch(e) {
+        alert('サーバーへの通信に失敗しました。');
       }
     }
 
-    document.getElementById('tmpl-save-btn').addEventListener('click', async () => {
-      const day = document.getElementById('tmpl-day-select').value;
-      const tbody = document.getElementById('tmpl-tbody');
-      const rows = tbody.querySelectorAll('tr');
-      let grid = [];
-
-      rows.forEach(tr => {
-        let rowArr = [];
-        tr.querySelectorAll('input').forEach(inp => {
-          rowArr.push(inp.value);
-        });
-        grid.push(rowArr);
-      });
-
-      const res = await fetch(`${API_BASE}/api/save-templates`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ day, grid })
-      });
-      const data = await res.json();
-      if(data.success) {
-        alert('テンプレートを保存しました！');
-      } else {
-        alert('保存に失敗しました。');
-      }
+    /* --- 過去メッセージ編集関連 --- */
+    document.getElementById('goto-editmsg-btn').addEventListener('click', () => {
+      switchSection(sectionEditMsg, false);
+      document.getElementById('recent-messages-container').innerHTML = "";
     });
 
     document.getElementById('fetch-recent-msg-btn').addEventListener('click', async () => {
       const container = document.getElementById('recent-messages-container');
       container.innerHTML = "取得中...";
       try {
-        const res = await fetch(`${API_BASE}/api/get-recent-messages`);
+        const res = await fetch(`${RENDER_API_URL}/api/get-recent-messages`);
         const data = await res.json();
         const messages = data.messages || [];
 
@@ -466,18 +1088,19 @@
         container.innerHTML = "";
         messages.forEach(msg => {
           const div = document.createElement('div');
-          div.style.cssText = "border:1px solid #ddd; padding:15px; border-radius:6px; margin-bottom:15px; background:#fdfefe;";
+          div.className = 'card';
+          div.style.marginBottom = "10px";
           div.innerHTML = `
-            <p style="font-size:0.85rem; color:#666; margin-bottom:8px;">送信時刻: ${new Date(msg.timestamp).toLocaleString()}</p>
+            <p style="font-size:0.8rem; color:#666; margin-bottom:6px;">送信時刻: ${new Date(msg.timestamp).toLocaleString()}</p>
             <div class="form-group">
               <label>タイトル</label>
               <input type="text" id="title-${msg.id}" value="${msg.embed.title || ''}">
             </div>
             <div class="form-group">
               <label>内容</label>
-              <textarea id="content-${msg.id}" style="height:150px;">${msg.embed.description || ''}</textarea>
+              <textarea id="content-${msg.id}" style="height:120px;">${msg.embed.description || ''}</textarea>
             </div>
-            <button onclick="updateMessage('${msg.id}')">この内容でDiscord上のメッセージを更新</button>
+            <button class="btn btn-success btn-sm" onclick="updateMessage('${msg.id}')">Discord上のメッセージを更新</button>
           `;
           container.appendChild(div);
         });
@@ -490,20 +1113,22 @@
       const newTitle = document.getElementById(`title-${messageId}`).value;
       const newContent = document.getElementById(`content-${messageId}`).value;
 
-      const res = await fetch(`${API_BASE}/api/edit-timetable-message`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messageId, newTitle, newContent })
-      });
-      const data = await res.json();
-      if(data.success) {
-        alert('Discord上のメッセージを更新しました！');
-      } else {
-        alert('更新に失敗しました。');
+      try {
+        const res = await fetch(`${RENDER_API_URL}/api/edit-timetable-message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messageId, newTitle, newContent })
+        });
+        const data = await res.json();
+        if(data.success) {
+          alert('Discord上のメッセージを更新しました！');
+        } else {
+          alert('更新に失敗しました。');
+        }
+      } catch(e) {
+        alert('サーバーへの通信に失敗しました。');
       }
     }
-
-    fetchSettings();
   </script>
 </body>
 </html>
