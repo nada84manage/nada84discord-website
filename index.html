@@ -688,7 +688,7 @@
 
     async function loadChannelsForAnnouncement() {
       try {
-        const res = await fetch(`${RENDER_API_URL}/api/get-channels`);
+        const res = await fetch(`/api/get-channels`);
         const data = await res.json();
         const select = document.getElementById('announcementChannelSelect');
         select.innerHTML = '';
