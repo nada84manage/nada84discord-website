@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>灘校84回生＋αグループ　管理者サイト</title>
+  <title>灘校84回生＋αグループ 管理者サイト</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
     body { background-color: #f4f6f8; color: #333; }
@@ -693,7 +693,7 @@
       const channelId = document.getElementById('announcementChannelSelect').value;
       const content = document.getElementById('announcementContent').value;
       const mode = document.getElementById('announcementMode').value;
-      const scheduledTime = document.getElementById('announcementScheduledTime').value;
+      const rawScheduledTime = document.getElementById('announcementScheduledTime').value;
 
       const checkboxes = document.querySelectorAll('input[name="ann-mention"]:checked');
       const mentions = Array.from(checkboxes).map(cb => cb.value);
@@ -724,10 +724,16 @@
           alert('通信エラー');
         }
       } else {
-        if (!scheduledTime) {
+        if (!rawScheduledTime) {
           alert('日時未入力');
           return;
         }
+        
+        // datetime-localで選択された日時に日本時間のタイムゾーンオフセット(+09:00)を明示的に付与する
+        const scheduledTime = rawScheduledTime.includes('Z') || rawScheduledTime.includes('+') 
+          ? rawScheduledTime 
+          : rawScheduledTime + ':00+09:00';
+
         try {
           const res = await fetch(`${RENDER_API_URL}/api/add-announcement-reservation`, {
             method: 'POST',
@@ -770,9 +776,9 @@
         data.reservations.forEach(r => {
           const card = document.createElement('div');
           card.style = "background: #f9f9f9; padding: 12px; border: 1px solid #ddd; border-radius: 6px; display: flex; flex-direction: column; gap: 8px;";
-          const timeFormatted = new Date(r.scheduledTime).toLocaleString();
+          const timeFormatted = new Date(r.scheduledTime).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
           card.innerHTML = `
-            <div style="font-size: 12px; color: #666;">予定時刻: <b>${timeFormatted}</b></div>
+            <div style="font-size: 12px; color: #666;">予定時刻 (JST): <b>${timeFormatted}</b></div>
             <div style="background: white; padding: 8px; border: 1px solid #eee; border-radius: 4px; white-space: pre-wrap; font-size: 14px;">${r.content}</div>
             <div style="display: flex; gap: 8px; justify-content: flex-end;">
               <button onclick="executeImmediateAnn('${r.id}', '${r.channelId}', ${JSON.stringify(r.content).replace(/"/g, '&quot;')}, ${JSON.stringify(r.mentions)})" class="btn btn-success btn-sm" style="font-size: 11px;">送信</button>
@@ -821,12 +827,17 @@
     async function editAnnRes(id) {
       const newContent = prompt('本文を入力');
       if (newContent === null) return;
-      const newTime = prompt('送信日時を入力');
+      const newTime = prompt('送信日時を入力 (例: 2026-06-06T12:00)');
+      
+      let scheduledTime = undefined;
+      if (newTime) {
+        scheduledTime = newTime.includes('Z') || newTime.includes('+') ? newTime : newTime + ':00+09:00';
+      }
       
       await fetch(`${RENDER_API_URL}/api/edit-announcement-reservation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, content: newContent, scheduledTime: newTime ? new Date(newTime).toISOString() : undefined })
+        body: JSON.stringify({ id, content: newContent, scheduledTime })
       });
       renderAnnouncementReservations();
     }
