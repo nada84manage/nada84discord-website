@@ -193,6 +193,14 @@
             <button id="goto-template-btn" class="btn btn-secondary">テンプレの編集</button>
           </div>
         </div>
+
+        <div class="card" style="margin-top: 20px;">
+          <div class="card-header"><h2>📢 お知らせ投稿管理</h2></div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; padding: 10px 0;">
+            <button id="openAnnouncementModal" class="btn btn-primary">お知らせを投稿</button>
+            <button id="openAnnouncementListModal" class="btn btn-secondary">予約送信リスト</button>
+          </div>
+        </div>
       </div>
 
       <div id="section-seed-form" class="hidden">
@@ -346,8 +354,66 @@
     </main>
   </div>
 
+  <div id="announcementModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 1000;">
+    <div style="background: #36393f; padding: 25px; border-radius: 8px; width: 480px; color: #fff; max-height: 90vh; overflow-y: auto;">
+      <h3>📢 お知らせ投稿設定</h3>
+      
+      <div style="margin-top: 15px;">
+        <label>送信先チャンネル:</label><br>
+        <select id="announcementChannelSelect" style="width: 100%; padding: 8px; margin-top: 5px; background: #202225; border: 1px solid #4f545c; color: #fff; border-radius: 4px;"></select>
+      </div>
+
+      <div style="margin-top: 15px;">
+        <label>本文内容:</label><br>
+        <textarea id="announcementContent" rows="6" placeholder="お知らせの本文を入力..." style="width: 100%; padding: 8px; margin-top: 5px; background: #202225; border: 1px solid #4f545c; color: #fff; border-radius: 4px;"></textarea>
+      </div>
+
+      <div style="margin-top: 15px;">
+        <label>メンション先 (複数選択可):</label>
+        <div style="margin-top: 5px; display: flex; flex-direction: column; gap: 6px; background: #202225; padding: 10px; border-radius: 4px;">
+          <label><input type="checkbox" name="ann-mention" value="@everyone"> @everyone</label>
+          <label><input type="checkbox" name="ann-mention" value="@here"> @here</label>
+          <label><input type="checkbox" name="ann-mention" value="1519116002510639234"> @メンションOK</label>
+          <label><input type="checkbox" name="ann-mention" value="1502928567951036556"> @84回生</label>
+          <label><input type="checkbox" name="ann-mention" value="1503329635461496943"> @他学年</label>
+          <label><input type="checkbox" name="ann-mention" value="1525021636502491136"> @サーバーおしらせ受け取り</label>
+          <label><input type="checkbox" name="ann-mention" value="1525664267339173939"> @botおしらせ受け取り</label>
+          <label><input type="checkbox" name="ann-mention" value="1525664322783678544" checked> @最新情報受け取り</label>
+        </div>
+      </div>
+
+      <div style="margin-top: 15px;">
+        <label>配信方法:</label><br>
+        <select id="announcementMode" style="width: 100%; padding: 8px; margin-top: 5px; background: #202225; border: 1px solid #4f545c; color: #fff; border-radius: 4px;">
+          <option value="now">即時送信</option>
+          <option value="schedule">予約送信</option>
+        </select>
+      </div>
+
+      <div id="scheduleTimeContainer" style="margin-top: 15px; display: none;">
+        <label>送信日時 (年・日付またぎOK):</label><br>
+        <input type="datetime-local" id="announcementScheduledTime" style="width: 100%; padding: 8px; margin-top: 5px; background: #202225; border: 1px solid #4f545c; color: #fff; border-radius: 4px;">
+      </div>
+
+      <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+        <button id="closeAnnouncementModal" class="btn btn-secondary">キャンセル</button>
+        <button id="submitAnnouncement" class="btn btn-success">実行する</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="announcementListModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 1000;">
+    <div style="background: #36393f; padding: 25px; border-radius: 8px; width: 600px; color: #fff; max-height: 90vh; overflow-y: auto;">
+      <h3>📋 お知らせ予約送信一覧</h3>
+      <div id="announcementReservationContainer" style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;">
+        </div>
+      <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+        <button id="closeAnnouncementListModal" class="btn btn-secondary">閉じる</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // 確実にRenderサーバーのURLを向くように設定（空文字の場合は現在のURLを使用）
     const RENDER_API_URL = "https://nada84group.onrender.com";
 
     let appState = {
@@ -397,7 +463,6 @@
         console.error(err);
         badge.className = "status-badge offline";
         statusText.innerText = "オフライン（サーバー接続エラー）";
-        // エラー時でも「読み込み中」のままフリーズさせないためのフォールバック
         appState.title = "データ取得エラー";
         appState.content = "サーバーからのデータ取得に失敗しました。ページを再読み込みするか、URLを確認してください。";
         renderView();
@@ -604,7 +669,184 @@
       }
     });
 
-    /* --- シード設定関連 --- */
+    // --- お知らせ機能関連のスクリプト ---
+    async function loadChannelsForAnnouncement() {
+      try {
+        const res = await fetch(`${RENDER_API_URL}/api/get-channels`);
+        const data = await res.json();
+        const select = document.getElementById('announcementChannelSelect');
+        select.innerHTML = '';
+        if (data.success && data.channels) {
+          data.channels.forEach(ch => {
+            const opt = document.createElement('option');
+            opt.value = ch.id;
+            opt.textContent = ch.name;
+            select.appendChild(opt);
+          });
+        }
+      } catch (e) {}
+    }
+
+    const annModal = document.getElementById('announcementModal');
+    document.getElementById('openAnnouncementModal').onclick = () => {
+      loadChannelsForAnnouncement();
+      annModal.style.display = 'flex';
+    };
+    document.getElementById('closeAnnouncementModal').onclick = () => annModal.style.display = 'none';
+
+    document.getElementById('announcementMode').onchange = (e) => {
+      const isSchedule = e.target.value === 'schedule';
+      document.getElementById('scheduleTimeContainer').style.display = isSchedule ? 'block' : 'none';
+    };
+
+    document.getElementById('submitAnnouncement').onclick = async () => {
+      const channelId = document.getElementById('announcementChannelSelect').value;
+      const content = document.getElementById('announcementContent').value;
+      const mode = document.getElementById('announcementMode').value;
+      const scheduledTime = document.getElementById('announcementScheduledTime').value;
+
+      const checkboxes = document.querySelectorAll('input[name="ann-mention"]:checked');
+      const mentions = Array.from(checkboxes).map(cb => cb.value);
+
+      if (!content) {
+        alert('本文を入力してください。');
+        return;
+      }
+
+      if (mode === 'now') {
+        if (!confirm('すぐに即時送信しますか？')) return;
+        try {
+          const res = await fetch(`${RENDER_API_URL}/api/send-announcement`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ channelId, content, mentions })
+          });
+          const data = await res.json();
+          if (data.success) {
+            alert('お知らせを即時送信しました！');
+            annModal.style.display = 'none';
+            document.getElementById('announcementContent').value = '';
+          } else {
+            alert('送信失敗');
+          }
+        } catch (e) {
+          alert('通信エラー');
+        }
+      } else {
+        if (!scheduledTime) {
+          alert('予約日時を選択してください。');
+          return;
+        }
+        try {
+          const res = await fetch(`${RENDER_API_URL}/api/add-announcement-reservation`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ channelId, scheduledTime, content, mentions })
+          });
+          const data = await res.json();
+          if (data.success) {
+            alert('お知らせの予約を登録しました！');
+            annModal.style.display = 'none';
+            document.getElementById('announcementContent').value = '';
+          } else {
+            alert('予約登録失敗');
+          }
+        } catch (e) {
+          alert('通信エラー');
+        }
+      }
+    };
+
+    const annListModal = document.getElementById('announcementListModal');
+    document.getElementById('openAnnouncementListModal').onclick = async () => {
+      annListModal.style.display = 'flex';
+      await renderAnnouncementReservations();
+    };
+    document.getElementById('closeAnnouncementListModal').onclick = () => annListModal.style.display = 'none';
+
+    async function renderAnnouncementReservations() {
+      const container = document.getElementById('announcementReservationContainer');
+      container.innerHTML = '読み込み中...';
+      try {
+        const res = await fetch(`${RENDER_API_URL}/api/get-announcement-reservations`);
+        const data = await res.json();
+        container.innerHTML = '';
+
+        if (!data.reservations || data.reservations.length === 0) {
+          container.innerHTML = '<p style="color: #b9bbbe;">現在予約されているお知らせはありません。</p>';
+          return;
+        }
+
+        data.reservations.forEach(r => {
+          const card = document.createElement('div');
+          card.style = "background: #2f3136; padding: 12px; border-radius: 6px; display: flex; flex-direction: column; gap: 8px;";
+          
+          const timeFormatted = new Date(r.scheduledTime).toLocaleString();
+          card.innerHTML = `
+            <div style="font-size: 12px; color: #b9bbbe;">⏰ 予定時刻: <b>${timeFormatted}</b></div>
+            <div style="background: #202225; padding: 8px; border-radius: 4px; white-space: pre-wrap; font-size: 14px;">${r.content}</div>
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+              <button onclick="executeImmediateAnn('${r.id}', '${r.channelId}', ${JSON.stringify(r.content).replace(/"/g, '&quot;')}, ${JSON.stringify(r.mentions)})" class="btn btn-success btn-sm" style="font-size: 11px;">今すぐ送信</button>
+              <button onclick="editAnnRes('${r.id}')" class="btn btn-primary btn-sm" style="font-size: 11px;">編集</button>
+              <button onclick="deleteAnnRes('${r.id}')" class="btn btn-danger btn-sm" style="font-size: 11px;">削除</button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      } catch (e) {
+        container.innerHTML = '取得エラー';
+      }
+    }
+
+    async function deleteAnnRes(id) {
+      if (!confirm('この予約を削除しますか？')) return;
+      await fetch(`${RENDER_API_URL}/api/delete-announcement-reservation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      renderAnnouncementReservations();
+    }
+
+    async function executeImmediateAnn(id, channelId, content, mentions) {
+      if (!confirm('今すぐこのお知らせを送信しますか？')) return;
+      try {
+        const res = await fetch(`${RENDER_API_URL}/api/send-announcement`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ channelId, content, mentions })
+        });
+        const data = await res.json();
+        if (data.success) {
+          await fetch(`${RENDER_API_URL}/api/delete-announcement-reservation`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+          });
+          alert('今すぐ送信し、予約を完了・削除しました！');
+          renderAnnouncementReservations();
+        } else {
+          alert('送信に失敗しました');
+        }
+      } catch (e) {
+        alert('通信エラー');
+      }
+    }
+
+    async function editAnnRes(id) {
+      const newContent = prompt('新しい本文を入力してください:');
+      if (newContent === null) return;
+      const newTime = prompt('新しい送信日時を入力 (例: 2026-07-30T09:00):');
+      
+      await fetch(`${RENDER_API_URL}/api/edit-announcement-reservation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, content: newContent, scheduledTime: newTime ? new Date(newTime).toISOString() : undefined })
+      });
+      renderAnnouncementReservations();
+    }
+
+    // --- シード設定関連 ---
     document.getElementById('goto-seed-btn').addEventListener('click', () => switchSection(sectionSeedForm, false));
 
     document.getElementById('seed-step1-next').addEventListener('click', () => {
@@ -725,7 +967,7 @@
       }
     });
 
-    /* --- 時間割送信関連 --- */
+    // --- 時間割送信関連 ---
     document.getElementById('goto-send-btn').addEventListener('click', () => {
       const now = new Date();
       for (let i = 0; i < 3; i++) {
@@ -882,7 +1124,7 @@
       }
     });
 
-    /* --- テンプレート編集関連 --- */
+    // --- テンプレート編集関連 ---
     document.getElementById('goto-template-btn').addEventListener('click', () => {
       tmplFormState.day = 'mon';
       document.getElementById('tmpl-day-select').value = 'mon';
