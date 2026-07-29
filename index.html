@@ -79,7 +79,6 @@
     .tt-table td.editable { background: #fff9f9; }
     .tt-table td.editable input { background: #ffe6e6; color: #c0392b; font-weight: bold; }
     .tt-table td.gray-mode { color: #888; background: #f9f9f9; }
-
     .disabled-option { color: #aaa; cursor: not-allowed; }
 
     @media (max-width: 768px) {
@@ -100,7 +99,7 @@
       <ul>
         <li><a href="/version" id="menu-version">bot設定</a></li>
         <li><a href="/terms" class="active" id="menu-terms">利用規約</a></li>
-        <li><a href="/timetable" id="menu-timetable">時間割</a></li>
+        <li><a href="/timetable" id="menu-timetable">おしらせ</a></li>
       </ul>
     </nav>
 
@@ -186,7 +185,7 @@
 
       <div id="section-timetable" class="hidden">
         <div class="card">
-          <div class="card-header"><h2>時間割管理</h2></div>
+          <div class="card-header"><h2>おしらせ管理</h2></div>
           <div style="display: flex; gap: 10px; flex-wrap: wrap; padding: 10px 0;">
             <button id="goto-seed-btn" class="btn btn-primary">シードを設定</button>
             <button id="goto-send-btn" class="btn btn-success">時間割送信</button>
@@ -195,10 +194,65 @@
         </div>
 
         <div class="card" style="margin-top: 20px;">
-          <div class="card-header"><h2>📢 お知らせ投稿管理</h2></div>
+          <div class="card-header"><h2>📢 おしらせ投稿管理</h2></div>
           <div style="display: flex; gap: 10px; flex-wrap: wrap; padding: 10px 0;">
-            <button id="openAnnouncementModal" class="btn btn-primary">お知らせを投稿</button>
+            <button id="openAnnouncementFormBtn" class="btn btn-primary">おしらせを投稿</button>
             <button id="openAnnouncementListModal" class="btn btn-secondary">予約送信リスト</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="section-announcement-editor" class="hidden">
+        <div class="card">
+          <div class="card-header">
+            <h2>おしらせ投稿・送信設定</h2>
+            <button class="btn btn-secondary btn-sm back-to-tt-home">前へ</button>
+          </div>
+          
+          <div class="form-group">
+            <label for="announcementChannelSelect">送信先チャンネル</label>
+            <select id="announcementChannelSelect" style="max-width: 400px;"></select>
+          </div>
+
+          <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; margin-top: 15px;">
+            <div style="width: 250px; background: #fafafa; padding: 12px; border: 1px solid #ddd; border-radius: 4px;">
+              <label style="font-size:0.85rem; font-weight:bold; display:block; margin-bottom: 8px;">メンション先 (複数選択可)</label>
+              <div class="radio-group" style="font-size:0.85rem; display: flex; flex-direction: column; gap: 6px;">
+                <label><input type="checkbox" name="ann-mention" value="@everyone"> @everyone</label>
+                <label><input type="checkbox" name="ann-mention" value="@here"> @here</label>
+                <label><input type="checkbox" name="ann-mention" value="1519116002510639234"> @メンションOK</label>
+                <label><input type="checkbox" name="ann-mention" value="1502928567951036556"> @84回生</label>
+                <label><input type="checkbox" name="ann-mention" value="1503329635461496943"> @他学年</label>
+                <label><input type="checkbox" name="ann-mention" value="1525021636502491136"> @サーバーおしらせ受け取り</label>
+                <label><input type="checkbox" name="ann-mention" value="1525664267339173939"> @botおしらせ受け取り</label>
+                <label><input type="checkbox" name="ann-mention" value="1525664322783678544" checked> @最新情報受け取り</label>
+              </div>
+
+              <div style="margin-top: 15px;">
+                <label style="font-size:0.85rem; font-weight:bold; display:block; margin-bottom: 4px;">配信タイミング</label>
+                <select id="announcementMode">
+                  <option value="now">即時送信</option>
+                  <option value="schedule">予約送信</option>
+                </select>
+              </div>
+
+              <div id="scheduleTimeContainer" style="margin-top: 10px; display: none;">
+                <label style="font-size:0.8rem; font-weight:bold; display:block; margin-bottom: 4px;">送信日時</label>
+                <input type="datetime-local" id="announcementScheduledTime" style="font-size: 0.8rem;">
+              </div>
+            </div>
+
+            <div style="flex: 1; min-width: 280px;">
+              <div class="form-group">
+                <label>おしらせ本文（Embedなしテキスト送信）</label>
+                <textarea id="announcementContent" rows="8" placeholder="おしらせの本文を入力してください..."></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-buttons" style="margin-top: 20px;">
+            <button class="btn btn-secondary back-to-tt-home">前へ</button>
+            <button id="submitAnnouncement" class="btn btn-success">送信する</button>
           </div>
         </div>
       </div>
@@ -354,59 +408,10 @@
     </main>
   </div>
 
-  <div id="announcementModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 1000;">
-    <div style="background: #36393f; padding: 25px; border-radius: 8px; width: 480px; color: #fff; max-height: 90vh; overflow-y: auto;">
-      <h3>📢 お知らせ投稿設定</h3>
-      
-      <div style="margin-top: 15px;">
-        <label>送信先チャンネル:</label><br>
-        <select id="announcementChannelSelect" style="width: 100%; padding: 8px; margin-top: 5px; background: #202225; border: 1px solid #4f545c; color: #fff; border-radius: 4px;"></select>
-      </div>
-
-      <div style="margin-top: 15px;">
-        <label>本文内容:</label><br>
-        <textarea id="announcementContent" rows="6" placeholder="お知らせの本文を入力..." style="width: 100%; padding: 8px; margin-top: 5px; background: #202225; border: 1px solid #4f545c; color: #fff; border-radius: 4px;"></textarea>
-      </div>
-
-      <div style="margin-top: 15px;">
-        <label>メンション先 (複数選択可):</label>
-        <div style="margin-top: 5px; display: flex; flex-direction: column; gap: 6px; background: #202225; padding: 10px; border-radius: 4px;">
-          <label><input type="checkbox" name="ann-mention" value="@everyone"> @everyone</label>
-          <label><input type="checkbox" name="ann-mention" value="@here"> @here</label>
-          <label><input type="checkbox" name="ann-mention" value="1519116002510639234"> @メンションOK</label>
-          <label><input type="checkbox" name="ann-mention" value="1502928567951036556"> @84回生</label>
-          <label><input type="checkbox" name="ann-mention" value="1503329635461496943"> @他学年</label>
-          <label><input type="checkbox" name="ann-mention" value="1525021636502491136"> @サーバーおしらせ受け取り</label>
-          <label><input type="checkbox" name="ann-mention" value="1525664267339173939"> @botおしらせ受け取り</label>
-          <label><input type="checkbox" name="ann-mention" value="1525664322783678544" checked> @最新情報受け取り</label>
-        </div>
-      </div>
-
-      <div style="margin-top: 15px;">
-        <label>配信方法:</label><br>
-        <select id="announcementMode" style="width: 100%; padding: 8px; margin-top: 5px; background: #202225; border: 1px solid #4f545c; color: #fff; border-radius: 4px;">
-          <option value="now">即時送信</option>
-          <option value="schedule">予約送信</option>
-        </select>
-      </div>
-
-      <div id="scheduleTimeContainer" style="margin-top: 15px; display: none;">
-        <label>送信日時 (年・日付またぎOK):</label><br>
-        <input type="datetime-local" id="announcementScheduledTime" style="width: 100%; padding: 8px; margin-top: 5px; background: #202225; border: 1px solid #4f545c; color: #fff; border-radius: 4px;">
-      </div>
-
-      <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
-        <button id="closeAnnouncementModal" class="btn btn-secondary">キャンセル</button>
-        <button id="submitAnnouncement" class="btn btn-success">実行する</button>
-      </div>
-    </div>
-  </div>
-
   <div id="announcementListModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 1000;">
     <div style="background: #36393f; padding: 25px; border-radius: 8px; width: 600px; color: #fff; max-height: 90vh; overflow-y: auto;">
-      <h3>📋 お知らせ予約送信一覧</h3>
-      <div id="announcementReservationContainer" style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;">
-        </div>
+      <h3>📋 おしらせ予約送信一覧</h3>
+      <div id="announcementReservationContainer" style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;"></div>
       <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
         <button id="closeAnnouncementListModal" class="btn btn-secondary">閉じる</button>
       </div>
@@ -439,6 +444,7 @@
     const sectionVersion = document.getElementById('section-version');
     const sectionTerms = document.getElementById('section-terms');
     const sectionTimetable = document.getElementById('section-timetable');
+    const sectionAnnouncementEditor = document.getElementById('section-announcement-editor');
     const sectionSeedForm = document.getElementById('section-seed-form');
     const sectionSeedGrid = document.getElementById('section-seed-grid');
     const sectionSendForm = document.getElementById('section-send-form');
@@ -453,18 +459,15 @@
           method: 'GET',
           headers: { 'Accept': 'application/json' }
         });
-        if (!res.ok) throw new Error("取得失敗");
+        if (!res.ok) throw new Error();
         appState = await res.json();
         renderView();
 
         badge.className = "status-badge online";
         statusText.innerText = "オンライン";
       } catch (err) {
-        console.error(err);
         badge.className = "status-badge offline";
         statusText.innerText = "オフライン（サーバー接続エラー）";
-        appState.title = "データ取得エラー";
-        appState.content = "サーバーからのデータ取得に失敗しました。ページを再読み込みするか、URLを確認してください。";
         renderView();
       }
     }
@@ -510,7 +513,7 @@
     hamburgerBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
 
     function switchSection(targetSec, updateHistory = true, path = "") {
-      [sectionVersion, sectionTerms, sectionTimetable, sectionSeedForm, sectionSeedGrid, sectionSendForm, sectionSendEditor, sectionTemplateEditor].forEach(s => s.classList.add('hidden'));
+      [sectionVersion, sectionTerms, sectionTimetable, sectionAnnouncementEditor, sectionSeedForm, sectionSeedGrid, sectionSendForm, sectionSendEditor, sectionTemplateEditor].forEach(s => s.classList.add('hidden'));
       [menuVersion, menuTerms, menuTimetable].forEach(m => m.classList.remove('active'));
       targetSec.classList.remove('hidden');
 
@@ -551,10 +554,7 @@
       switchSection(sectionTimetable, true, '/timetable');
     });
 
-    window.addEventListener('popstate', () => {
-      handleRouting();
-    });
-
+    window.addEventListener('popstate', () => handleRouting());
     handleRouting();
 
     document.querySelectorAll('.back-to-tt-home').forEach(btn => {
@@ -638,12 +638,8 @@
           alert('バージョンを更新しました');
           await fetchSettings();
           exitEditMode();
-        } else {
-          throw new Error("サーバーエラー");
         }
-      } catch (err) {
-        alert('サーバーへの通信に失敗しました。');
-      }
+      } catch (err) {}
     });
 
     document.getElementById('save-terms-btn').addEventListener('click', async () => {
@@ -661,15 +657,11 @@
           alert('利用規約を保存し、Discord上のメッセージを更新しました！');
           fetchSettings();
           exitEditMode();
-        } else {
-          alert('保存に失敗しました');
         }
-      } catch (err) {
-        alert('サーバーへの通信に失敗しました。');
-      }
+      } catch (err) {}
     });
 
-    // --- お知らせ機能関連のスクリプト ---
+    // --- おしらせ関連スクリプト ---
     async function loadChannelsForAnnouncement() {
       try {
         const res = await fetch(`${RENDER_API_URL}/api/get-channels`);
@@ -687,12 +679,10 @@
       } catch (e) {}
     }
 
-    const annModal = document.getElementById('announcementModal');
-    document.getElementById('openAnnouncementModal').onclick = () => {
+    document.getElementById('openAnnouncementFormBtn').onclick = () => {
       loadChannelsForAnnouncement();
-      annModal.style.display = 'flex';
+      switchSection(sectionAnnouncementEditor, false);
     };
-    document.getElementById('closeAnnouncementModal').onclick = () => annModal.style.display = 'none';
 
     document.getElementById('announcementMode').onchange = (e) => {
       const isSchedule = e.target.value === 'schedule';
@@ -709,7 +699,7 @@
       const mentions = Array.from(checkboxes).map(cb => cb.value);
 
       if (!content) {
-        alert('本文を入力してください。');
+        alert('おしらせの本文を入力してください。');
         return;
       }
 
@@ -723,11 +713,12 @@
           });
           const data = await res.json();
           if (data.success) {
-            alert('お知らせを即時送信しました！');
-            annModal.style.display = 'none';
+            alert('おしらせを即時送信しました！');
             document.getElementById('announcementContent').value = '';
+            menuTimetable.classList.add('active');
+            switchSection(sectionTimetable, true, '/timetable');
           } else {
-            alert('送信失敗');
+            alert('送信に失敗しました: ' + (data.error || ''));
           }
         } catch (e) {
           alert('通信エラー');
@@ -745,11 +736,10 @@
           });
           const data = await res.json();
           if (data.success) {
-            alert('お知らせの予約を登録しました！');
-            annModal.style.display = 'none';
+            alert('おしらせの予約を登録しました！');
             document.getElementById('announcementContent').value = '';
-          } else {
-            alert('予約登録失敗');
+            menuTimetable.classList.add('active');
+            switchSection(sectionTimetable, true, '/timetable');
           }
         } catch (e) {
           alert('通信エラー');
@@ -773,14 +763,13 @@
         container.innerHTML = '';
 
         if (!data.reservations || data.reservations.length === 0) {
-          container.innerHTML = '<p style="color: #b9bbbe;">現在予約されているお知らせはありません。</p>';
+          container.innerHTML = '<p style="color: #b9bbbe;">現在予約されているおしらせはありません。</p>';
           return;
         }
 
         data.reservations.forEach(r => {
           const card = document.createElement('div');
           card.style = "background: #2f3136; padding: 12px; border-radius: 6px; display: flex; flex-direction: column; gap: 8px;";
-          
           const timeFormatted = new Date(r.scheduledTime).toLocaleString();
           card.innerHTML = `
             <div style="font-size: 12px; color: #b9bbbe;">⏰ 予定時刻: <b>${timeFormatted}</b></div>
@@ -809,7 +798,7 @@
     }
 
     async function executeImmediateAnn(id, channelId, content, mentions) {
-      if (!confirm('今すぐこのお知らせを送信しますか？')) return;
+      if (!confirm('今すぐこのおしらせを送信しますか？')) return;
       try {
         const res = await fetch(`${RENDER_API_URL}/api/send-announcement`, {
           method: 'POST',
@@ -825,12 +814,8 @@
           });
           alert('今すぐ送信し、予約を完了・削除しました！');
           renderAnnouncementReservations();
-        } else {
-          alert('送信に失敗しました');
         }
-      } catch (e) {
-        alert('通信エラー');
-      }
+      } catch (e) {}
     }
 
     async function editAnnRes(id) {
@@ -852,11 +837,10 @@
     document.getElementById('seed-step1-next').addEventListener('click', () => {
       const pRadio = document.querySelector('input[name="seed-periods"]:checked');
       const dRadio = document.querySelector('input[name="seed-date"]:checked');
-      if (!pRadio) { alert('授業数を選択してください'); return; }
+      if (!pRadio) return;
       
       seedFormState.periods = parseInt(pRadio.value);
       seedFormState.dateOffset = parseInt(dRadio.value);
-
       seedFormState.grid = [];
       for (let r = 0; r < seedFormState.periods; r++) {
         seedFormState.grid.push(["", "", "", ""]);
@@ -897,9 +881,7 @@
 
     document.getElementById('seed-reset-btn').addEventListener('click', () => {
       for (let r = 0; r < seedFormState.periods; r++) {
-        for (let c = 0; c < 4; c++) {
-          seedFormState.grid[r][c] = "";
-        }
+        for (let c = 0; c < 4; c++) seedFormState.grid[r][c] = "";
       }
       buildSeedTable();
     });
@@ -912,11 +894,7 @@
 
         for (let r = 0; r < seedFormState.periods; r++) {
           for (let c = 0; c < 4; c++) {
-            if (tmpl[r] && tmpl[r][c] !== undefined) {
-              seedFormState.grid[r][c] = tmpl[r][c];
-            } else {
-              seedFormState.grid[r][c] = "";
-            }
+            seedFormState.grid[r][c] = (tmpl[r] && tmpl[r][c] !== undefined) ? tmpl[r][c] : "";
           }
         }
         buildSeedTable();
@@ -936,7 +914,6 @@
       }
 
       seedFormState.remark = document.getElementById('seed-remark-input').value;
-
       let targetDate = new Date();
       targetDate.setDate(targetDate.getDate() + seedFormState.dateOffset);
       let dateKey = targetDate.toISOString().split('T')[0];
@@ -959,12 +936,8 @@
           alert('シードを登録しました！');
           menuTimetable.classList.add('active');
           switchSection(sectionTimetable, true, '/timetable');
-        } else {
-          alert('シード登録に失敗しました');
         }
-      } catch (err) {
-        alert('サーバーへの通信に失敗しました。');
-      }
+      } catch (err) {}
     });
 
     // --- 時間割送信関連 ---
@@ -990,7 +963,7 @@
 
     document.getElementById('send-step1-next').addEventListener('click', () => {
       const sel = document.querySelector('input[name="send-date"]:checked');
-      if (!sel) { alert('送信する時間割を選択してください'); return; }
+      if (!sel) return;
       
       let offset = parseInt(sel.value);
       let targetDate = new Date();
@@ -1007,14 +980,12 @@
       sendFormState.remark = sendFormState.seedData.remark || "";
 
       document.getElementById('send-remark-input').value = sendFormState.remark;
-
       buildSendEditor();
       switchSection(sectionSendEditor, false);
     });
 
     function buildSendEditor() {
       document.querySelectorAll('input[name="key-status"]').forEach(ch => ch.checked = false);
-
       let uniqueSubjects = new Set();
       let seedGrid = sendFormState.seedData.grid;
       seedGrid.forEach(row => row.forEach(val => { if (val) uniqueSubjects.add(val); }));
@@ -1047,7 +1018,6 @@
         for (let c = 0; c < 4; c++) {
           let td = document.createElement('td');
           let seedVal = seedGrid[r][c] || "";
-
           let input = document.createElement('input');
           input.type = "text";
           input.value = seedVal;
@@ -1065,12 +1035,8 @@
             let val = e.target.value;
             if (!sendFormState.customGrid[r]) sendFormState.customGrid[r] = {};
             sendFormState.customGrid[r][c] = val;
-
-            if (val.trim() !== "") {
-              sendFormState.editedCells[`${r}-${c}`] = true;
-            } else {
-              delete sendFormState.editedCells[`${r}-${c}`];
-            }
+            if (val.trim() !== "") sendFormState.editedCells[`${r}-${c}`] = true;
+            else delete sendFormState.editedCells[`${r}-${c}`];
           });
 
           input.addEventListener('blur', () => {
@@ -1093,10 +1059,8 @@
     document.getElementById('send-execute-btn').addEventListener('click', async () => {
       sendFormState.keys = [];
       document.querySelectorAll('input[name="key-status"]:checked').forEach(ch => sendFormState.keys.push(ch.value));
-
       sendFormState.cuts = [];
       document.querySelectorAll('input[name="cut-subj"]:checked').forEach(ch => sendFormState.cuts.push(ch.value));
-
       sendFormState.remark = document.getElementById('send-remark-input').value;
 
       try {
@@ -1116,12 +1080,8 @@
           alert('時間割をDiscordへ送信しました！');
           menuTimetable.classList.add('active');
           switchSection(sectionTimetable, true, '/timetable');
-        } else {
-          alert('時間割の送信に失敗しました');
         }
-      } catch (err) {
-        alert('サーバーへの通信に失敗しました。');
-      }
+      } catch (err) {}
     });
 
     // --- テンプレート編集関連 ---
@@ -1180,15 +1140,11 @@
         });
 
         if (res.ok) {
-          alert('テンプレートを保存しました！次回より有効になります。');
+          alert('テンプレートを保存しました！');
           menuTimetable.classList.add('active');
           switchSection(sectionTimetable, true, '/timetable');
-        } else {
-          alert('テンプレートの保存に失敗しました');
         }
-      } catch (err) {
-        alert('サーバーへの通信に失敗しました。');
-      }
+      } catch (err) {}
     });
   </script>
 </body>
