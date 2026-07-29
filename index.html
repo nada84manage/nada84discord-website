@@ -97,7 +97,7 @@
     <nav class="sidebar" id="sidebar">
       <h2>灘校84回生＋α</h2>
       <ul>
-        <li><a href="/version" id="menu-version">設定</a></li>
+        <li><a href="/version" id="menu-version">bot設定</a></li>
         <li><a href="/terms" class="active" id="menu-terms">利用規約</a></li>
         <li><a href="/timetable" id="menu-timetable">おしらせ</a></li>
       </ul>
@@ -196,7 +196,7 @@
         <div class="card" style="margin-top: 20px;">
           <div class="card-header"><h2>おしらせ送信</h2></div>
           <div style="display: flex; gap: 10px; flex-wrap: wrap; padding: 10px 0;">
-            <button id="openAnnouncementFormBtn" class="btn btn-primary">時間割送信</button>
+            <button id="openAnnouncementFormBtn" class="btn btn-primary">おしらせ送信</button>
             <button id="openAnnouncementListModal" class="btn btn-secondary">予約送信リスト</button>
           </div>
         </div>
@@ -262,14 +262,14 @@
           <div class="form-group">
             <label>授業数</label>
             <div id="seed-periods-options" class="radio-group">
-              <label><input type="radio" name="seed-periods" value="1"> 1</label>
-              <label><input type="radio" name="seed-periods" value="2"> 2</label>
-              <label><input type="radio" name="seed-periods" value="3"> 3</label>
-              <label><input type="radio" name="seed-periods" value="4"> 4</label>
-              <label><input type="radio" name="seed-periods" value="5"> 5</label>
-              <label><input type="radio" name="seed-periods" value="6" checked> 6</label>
-              <label><input type="radio" name="seed-periods" value="7"> 7</label>
-              <label><input type="radio" name="seed-periods" value="8"> 8</label>
+              <label><input type="radio" name="seed-periods" value="1"> 1時間</label>
+              <label><input type="radio" name="seed-periods" value="2"> 2時間</label>
+              <label><input type="radio" name="seed-periods" value="3"> 3時間</label>
+              <label><input type="radio" name="seed-periods" value="4"> 4時間</label>
+              <label><input type="radio" name="seed-periods" value="5"> 5時間</label>
+              <label><input type="radio" name="seed-periods" value="6" checked> 6時間</label>
+              <label><input type="radio" name="seed-periods" value="7"> 7時間</label>
+              <label><input type="radio" name="seed-periods" value="8"> 8時間</label>
             </div>
           </div>
           <div class="form-group">
@@ -313,7 +313,7 @@
           </div>
           <div class="form-group" style="margin-top: 15px;">
             <label>備考</label>
-            <textarea id="seed-remark-input" rows="3" placeholder="備考"></textarea>
+            <textarea id="seed-remark-input" rows="3" placeholder="備考を入力"></textarea>
           </div>
           <div class="action-buttons">
             <button id="seed-step2-prev" class="btn btn-secondary">戻る</button>
