@@ -418,9 +418,8 @@
       </div>
     </div>
   </div>
-
-  <script>
-    const RENDER_API_URL = "https://nada84group.onrender.com";
+<script>
+  const RENDER_API_URL = "https://nada84group.onrender.com";
 
     let appState = {
       version: "2.07.00",
@@ -511,7 +510,32 @@
     }
 
     fetchSettings();
-    hamburgerBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
+
+    // ハンバーガーメニューの開閉処理
+    hamburgerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      sidebar.classList.toggle('open');
+    });
+
+    // メニュー項目クリックまたは背景クリックでサイドバーを閉じる処理
+    if (sidebar) {
+      // 1. サイドバー内のリンクやボタンがクリックされたら閉じる
+      sidebar.querySelectorAll('a, button').forEach(item => {
+        item.addEventListener('click', () => {
+          sidebar.classList.remove('open');
+        });
+      });
+
+      // 2. サイドバーの外側（関係ないところ）をクリックしたら閉じる
+      document.addEventListener('click', (event) => {
+        const isClickInside = sidebar.contains(event.target);
+        const isClickOnToggle = hamburgerBtn.contains(event.target);
+
+        if (!isClickInside && !isClickOnToggle && sidebar.classList.contains('open')) {
+          sidebar.classList.remove('open');
+        }
+      });
+    }
 
     function switchSection(targetSec, updateHistory = true, path = "") {
       [sectionVersion, sectionTerms, sectionTimetable, sectionAnnouncementEditor, sectionSeedForm, sectionSeedGrid, sectionSendForm, sectionSendEditor, sectionTemplateEditor].forEach(s => s.classList.add('hidden'));
@@ -729,7 +753,6 @@
           return;
         }
         
-        // datetime-localで選択された日時に日本時間のタイムゾーンオフセット(+09:00)を明示的に付与する
         const scheduledTime = rawScheduledTime.includes('Z') || rawScheduledTime.includes('+') 
           ? rawScheduledTime 
           : rawScheduledTime + ':00+09:00';
